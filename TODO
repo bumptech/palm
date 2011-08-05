@@ -4,3 +4,4 @@
  * More .proto syntax: defaults, comments
  * Double/float
  * Enum/Bool
+ * Heavy tests against google's official lib
