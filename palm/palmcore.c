@@ -83,8 +83,10 @@ static void pbf_scan (pbf_protobuf *pbf) {
         field_num = key >> 3;
         field_type = key & 7;
 
-        if (field_num >= pbf->num_marks)
-            pbf_ensure_space(pbf, field_num);
+        if (field_num >= pbf->num_marks) {
+            success = pbf_ensure_space(pbf, field_num);
+            if (!success) return; // cannot handle high field numbers with design
+        }
         if (field_num > pbf->max_mark)
             pbf->max_mark = field_num;
 
@@ -206,8 +208,11 @@ int pbf_get_bytes(pbf_protobuf *pbf, uint64_t field_num,
 
 int pbf_set_bytes(pbf_protobuf *pbf, uint64_t field_num,
         char *out, uint64_t length) {
-    if (field_num >= pbf->num_marks)
-        pbf_ensure_space(pbf, field_num);
+    int resized;
+    if (field_num >= pbf->num_marks) {
+        resized = pbf_ensure_space(pbf, field_num);
+        assert(resized);
+    }
     if (field_num > pbf->max_mark)
         pbf->max_mark = field_num;
     pbf_mark *cur = &pbf->marks[field_num];
@@ -226,8 +231,11 @@ int pbf_set_bytes(pbf_protobuf *pbf, uint64_t field_num,
 
 int pbf_set_integer(pbf_protobuf *pbf, uint64_t field_num,
         uint64_t value, int fixed) {
-    if (field_num >= pbf->num_marks)
-        pbf_ensure_space(pbf, field_num);
+    int resized;
+    if (field_num >= pbf->num_marks) {
+        resized = pbf_ensure_space(pbf, field_num);
+        assert(resized);
+    }
     if (field_num > pbf->max_mark)
         pbf->max_mark = field_num;
     pbf_mark *cur = &pbf->marks[field_num];
@@ -261,8 +269,11 @@ int pbf_set_integer(pbf_protobuf *pbf, uint64_t field_num,
 
 int pbf_set_signed_integer(pbf_protobuf *pbf, uint64_t field_num,
         int64_t value, int zigzag) {
-    if (field_num >= pbf->num_marks)
-        pbf_ensure_space(pbf, field_num);
+    int resized;
+    if (field_num >= pbf->num_marks) {
+        resized = pbf_ensure_space(pbf, field_num);
+        assert(resized);
+    }
     if (field_num > pbf->max_mark)
         pbf->max_mark = field_num;
     pbf_mark *cur = &pbf->marks[field_num];
