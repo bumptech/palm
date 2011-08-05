@@ -62,7 +62,7 @@ static int pbf_ensure_space(pbf_protobuf *pbf, int max) {
 }
 
 int pbf_exists(pbf_protobuf *pbf, uint64_t field_num) {
-    if (field_num < 0 || field_num > pbf->num_marks) // soon, max mark
+    if (field_num < 0 || field_num > pbf->max_mark) 
         return 0;
     return pbf->marks[field_num].exists;
 }
@@ -201,7 +201,7 @@ void pbf_free(pbf_protobuf *pbf) {
 
 int pbf_get_bytes(pbf_protobuf *pbf, uint64_t field_num,
         char **out, uint64_t *length) {
-    if (field_num < 0 || field_num >= pbf->num_marks)
+    if (field_num < 0 || field_num > pbf->max_mark)
         return 0;
     pbf_mark *cur = &pbf->marks[field_num];
     if (!cur->exists)
@@ -307,7 +307,7 @@ int pbf_set_signed_integer(pbf_protobuf *pbf, uint64_t field_num,
 }
 
 int pbf_get_integer(pbf_protobuf *pbf, uint64_t field_num, uint64_t *res) {
-    if (field_num < 0 || field_num >= pbf->num_marks)
+    if (field_num < 0 || field_num > pbf->max_mark)
         return 0;
     pbf_mark *cur = &pbf->marks[field_num];
     if (!cur->exists)
@@ -327,7 +327,7 @@ int pbf_get_integer(pbf_protobuf *pbf, uint64_t field_num, uint64_t *res) {
 int pbf_get_signed_integer(pbf_protobuf *pbf,
         uint64_t field_num, int64_t *res,
         int32_t *res32, int use_zigzag) {
-    if (field_num < 0 || field_num >= pbf->num_marks)
+    if (field_num < 0 || field_num > pbf->max_mark)
         return 0;
     pbf_mark *cur = &pbf->marks[field_num];
     if (!cur->exists)
