@@ -5,3 +5,5 @@
  * Double/float
  * Enum/Bool
  * Heavy tests against google's official lib
+ * Clean up setup, palmc script, organize project, etc.
+ * Limit field numbers >= 1 and < 100k at higher levels (esp on set side)
