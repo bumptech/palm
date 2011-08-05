@@ -1,0 +1,6 @@
+ * Nested Messages
+ * Repeated
+ * Fixed fields
+ * More .proto syntax: defaults, comments
+ * Double/float
+ * Enum/Bool
