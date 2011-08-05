@@ -58,4 +58,6 @@ int pbf_set_signed_integer(pbf_protobuf *pbf, uint64_t field_num,
 
 unsigned char *pbf_serialize(pbf_protobuf *pbf, int *length);
 
+void pbf_remove(pbf_protobuf *pbf, uint64_t field_num);
+
 #endif /* PALMCORE_H */

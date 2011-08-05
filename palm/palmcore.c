@@ -67,6 +67,13 @@ int pbf_exists(pbf_protobuf *pbf, uint64_t field_num) {
     return pbf->marks[field_num].exists;
 }
 
+void pbf_remove(pbf_protobuf *pbf, uint64_t field_num) {
+    if (field_num < 0 || field_num > pbf->max_mark) 
+        return;
+
+    pbf->marks[field_num].exists = 0;
+}
+
 static void pbf_scan (pbf_protobuf *pbf) {
     uint64_t key;
     int success, iters;

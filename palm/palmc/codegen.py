@@ -60,7 +60,14 @@ def write_field(num, field):
         self._cache[%s] = v
         self._mods[%s] = ProtoBase.TYPE_%s
 
-    %s = property(_get_%s, _set_%s)
+    def _del_%s(self):
+        if %s in self._cache:
+            del self._cache[%s]
+        if %s in self._mods:
+            del self._mods[%s]
+        self._buf_del(%s)
+
+    %s = property(_get_%s, _set_%s, _del_%s)
 
     @property
     def %s__exists(self):
@@ -68,5 +75,6 @@ def write_field(num, field):
 
 ''' % (name, num, num, num, type, name, num,
     name, num, num, type,
-    name, name, name,
+    name, num, num, num, num, num,
+    name, name, name, name,
     name, num, num))

@@ -27,6 +27,8 @@ cdef extern from "palmcore.h":
     int pbf_set_signed_integer(pbf_protobuf *pbf, uint64_t field_num,
         int64_t value, int zigzag)
 
+    void pbf_remove(pbf_protobuf *pbf, uint64_t field_num)
+
 class ProtoFieldMissing(Exception): pass
 class ProtoDataError(Exception): pass
 
@@ -122,6 +124,9 @@ cdef class ProtoBase:
         cdef int e
         e = pbf_exists(self.buf, field)
         return bool(e)
+
+    def _buf_del(self, field):
+        pbf_remove(self.buf, field)
 
     def __dealloc__(self):
         if self.buf != NULL:
