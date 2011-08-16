@@ -10,10 +10,10 @@ message_label           := [a-zA-Z], [a-z0-9A-Z_]*
 section                 := [a-z]+, [ \t\n]+
 message_body            := "{"!,whitespace*,field_list,whitespace*,"}"!
 >field_list<            := field_opt*
->field_opt<             := message / field           
+>field_opt<             := message / field
 field                   := field_require, whitespace+!, field_type!, whitespace+!, field_name!, whitespace*, "="!, whitespace*, field_num!, whitespace*, ";"!, whitespace*
 field_require           := "optional" / "required"
-field_type              := "string" / "uint32" / "uint64" / "sint32" / "sint64" / "int32" / "int64"
+field_type              := [a-zA-Z], [a-z0-9A-Z_]*
 field_name              := [a-zA-Z], [a-z0-9A-Z_]*
 field_num               := [0-9]+
 '''

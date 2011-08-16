@@ -1,7 +1,7 @@
+import sys
 pfx = ''
 o = []
 def gen_module(messages):
-    print messages
     global pfx
     global o
     pfx = ''
@@ -22,16 +22,18 @@ def out(s):
 
 def clean(name):
     return name.split('-', 1)[1]
-    
+
 def write_class(name, fields, subs):
+    global pfx
     name = clean(name)
     out(
 '''
 class %s(ProtoBase):
-    def __init__(self, _pbf_buf=''): # XXX support setting
+    def __init__(self, _pbf_buf='', _pbf_parent_callback=None): # XXX support setting
         ProtoBase.__init__(self, _pbf_buf)
         self._cache = {}
         self._mods = {}
+        self._pbf_parent_callback = _pbf_parent_callback
 
     def dumps(self):
         self._save(self._mods, self._cache)
@@ -39,6 +41,15 @@ class %s(ProtoBase):
         return self._serialize()
 
 ''' % name)
+    for sn, (sf, ss) in subs:
+        pfx += "    "
+        write_class(sn, sf, ss)
+        pfx = pfx[:-4]
+        snm = clean(sn)
+        out(
+'''
+    TYPE_%s = %s
+'''  % (snm, snm))
 
     # TODO -- submessages
     for num, field in fields.iteritems():
@@ -52,15 +63,24 @@ def write_field(num, field):
         if %s in self._cache:
             r = self._cache[%s]
         else:
-            r = self._buf_get(%s, ProtoBase.TYPE_%s, '%s')
+            r = self._buf_get(%s, self.TYPE_%s, '%s')
             self._cache[%s] = r
         return r
 
     def _set_%s(self, v):
+        if self._pbf_parent_callback:
+            self._pbf_parent_callback()
+        if isinstance(v, ProtoBase):
+            v._pbf_parent_callback = self._mod_%s
         self._cache[%s] = v
-        self._mods[%s] = ProtoBase.TYPE_%s
+        self._mods[%s] = self.TYPE_%s
+
+    def _mod_%s(self):
+        self._mods[%s] = self.TYPE_%s
 
     def _del_%s(self):
+        if self._pbf_parent_callback:
+            self._pbf_parent_callback()
         if %s in self._cache:
             del self._cache[%s]
         if %s in self._mods:
@@ -74,7 +94,8 @@ def write_field(num, field):
         return %s in self._mods or self._buf_exists(%s)
 
 ''' % (name, num, num, num, type, name, num,
-    name, num, num, type,
+    name, name, num, num, type,
+    name, num, type,
     name, num, num, num, num, num,
     name, name, name, name,
     name, num, num))
