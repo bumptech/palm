@@ -54,10 +54,10 @@ cdef class ProtoBase:
     cdef int CTYPE_sint64
 
     def __init__(self, data):
-        self.data = data
+        self._data = data
         self.buf = pbf_load(data, len(data))
         if (self.buf == NULL):
-            self.data = None
+            self._data = None
             raise ProtoDataError("Invalid or unsupported protobuf data")
         self.CTYPE_string = self.TYPE_string
         self.CTYPE_bytes = self.TYPE_bytes
@@ -68,7 +68,23 @@ cdef class ProtoBase:
         self.CTYPE_sint32 = self.TYPE_sint32
         self.CTYPE_sint64 = self.TYPE_sint64
 
+    def _get_submessage(self, field, typ, name):
+        cdef char *res
+        cdef uint64_t rlen
+        cdef int got
+
+        got = pbf_get_bytes(self.buf, field, &res, &rlen)
+        if not got:
+            raise ProtoFieldMissing(name)
+        bout = res[:rlen]
+
+        inst = typ(bout, getattr(self, '_mod_%s' % name))
+        return inst
+
+
     def _buf_get(self, field, typ, name):
+        if type(typ) is not int:
+            return self._get_submessage(field, typ, name)
         cdef int ctyp = typ
         cdef char *res
         cdef uint64_t rlen
@@ -136,25 +152,32 @@ cdef class ProtoBase:
         cdef int ctyp
         for f, v in cache.iteritems():
             if f in mods:
-                ctyp = mods[f]
-                if ctyp == self.CTYPE_string:
-                    if type(v) is unicode:
-                        v = v.encode("utf-8")
-                    l = len(v)
+                typ = mods[f]
+                if isinstance(v, ProtoBase):
+                    o = v.dumps()
+                    l = len(o)
                     pbf_set_bytes(self.buf,
-                        f, v, l)
-                elif ctyp == self.CTYPE_bytes:
-                    l = len(v)
-                    pbf_set_bytes(self.buf,
-                        f, v, l)
-                elif ctyp == self.CTYPE_uint32 or ctyp == self.CTYPE_uint64:
-                    pbf_set_signed_integer(self.buf, f, v, 0)
-                elif ctyp == self.CTYPE_int32 or ctyp == self.CTYPE_int64:
-                    pbf_set_signed_integer(self.buf, f, v, 0)
-                elif ctyp == self.CTYPE_sint32 or ctyp == self.CTYPE_sint64:
-                    pbf_set_signed_integer(self.buf, f, v, 1)
+                        f, o, l)
                 else:
-                    assert 0, "unimplemented"
+                    ctyp = typ
+                    if ctyp == self.CTYPE_string:
+                        if type(v) is unicode:
+                            v = v.encode("utf-8")
+                        l = len(v)
+                        pbf_set_bytes(self.buf,
+                            f, v, l)
+                    elif ctyp == self.CTYPE_bytes:
+                        l = len(v)
+                        pbf_set_bytes(self.buf,
+                            f, v, l)
+                    elif ctyp == self.CTYPE_uint32 or ctyp == self.CTYPE_uint64:
+                        pbf_set_signed_integer(self.buf, f, v, 0)
+                    elif ctyp == self.CTYPE_int32 or ctyp == self.CTYPE_int64:
+                        pbf_set_signed_integer(self.buf, f, v, 0)
+                    elif ctyp == self.CTYPE_sint32 or ctyp == self.CTYPE_sint64:
+                        pbf_set_signed_integer(self.buf, f, v, 1)
+                    else:
+                        assert 0, "unimplemented"
 
     def _serialize(self):
         cdef unsigned char *cout
