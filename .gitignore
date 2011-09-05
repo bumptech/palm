@@ -1,1 +1,3 @@
 build/
+palm/palm.c
+*.pyc
