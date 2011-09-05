@@ -78,7 +78,8 @@ class ProtoParser(Parser):
 
 parser = ProtoParser(protofile)
 
-r = parser.parse(open("test.proto").read())
+from sys import stdin
+r = parser.parse(stdin.read())
 
 from codegen import gen_module
 
