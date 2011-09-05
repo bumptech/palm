@@ -12,6 +12,10 @@ message Test {
     message Foo {
         optional string baz = 8;
     }
+
+    optional fixed64 g = 9;
+    optional sfixed64 h = 10;
+    optional sfixed64 i = 11;
 }
 
 
