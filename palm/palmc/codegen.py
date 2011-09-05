@@ -40,7 +40,14 @@ class %s(ProtoBase):
         self.mods = {}
         return self._serialize()
 
-''' % name)
+    def fields(self):
+        return ['%s']
+
+    def __str__(self):
+        return '\\n'.join('%%s: %%s' %% (f, repr(getattr(self, '_get_%%s' %% f)())) for f in self.fields()
+                          if getattr(self, '%%s__exists' %% f))
+''' % (name,
+       "', '".join(name for _, __, name in fields.values())))
     for sn, (sf, ss) in subs:
         pfx += "    "
         write_class(sn, sf, ss)
