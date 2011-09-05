@@ -113,12 +113,12 @@ static void pbf_scan (pbf_protobuf *pbf) {
                 break;
             case pbf_type_fixed64:
                 if (limit - ptr < 8) return;
-                cur->fdata.i64 = *ptr;
+                cur->fdata.i64 = *(uint64_t*)ptr;
                 ptr += sizeof(uint64_t);
                 break;
             case pbf_type_fixed32:
                 if (limit - ptr < 4) return;
-                cur->fdata.i32 = *ptr;
+                cur->fdata.i32 = *(uint32_t*)ptr;
                 ptr += sizeof(uint32_t);
                 break;
             default: // unknown type
