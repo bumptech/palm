@@ -28,6 +28,8 @@ class TestProto(object):
             g=2**64-1,
             h=2**63-1,
             i=-2**63,
+
+            k=10.4,
             )
 
     def test_fields(self):
@@ -61,3 +63,6 @@ class TestProto(object):
 
     def test_fixed(self):
         self.fields_test('g', 'h', 'i')
+
+    def test_double(self):
+        self.fields_test('k')

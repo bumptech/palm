@@ -45,7 +45,8 @@ cdef class ProtoBase:
      TYPE_sint64,
      TYPE_fixed64,
      TYPE_sfixed64,
-     ) = range(10)
+     TYPE_double,
+     ) = range(11)
     cdef pbf_protobuf *buf
 
     cdef int CTYPE_string
@@ -58,6 +59,7 @@ cdef class ProtoBase:
     cdef int CTYPE_sint64
     cdef int CTYPE_fixed64
     cdef int CTYPE_sfixed64
+    cdef int CTYPE_double
 
     def __init__(self, data):
         self._data = data
@@ -75,6 +77,7 @@ cdef class ProtoBase:
         self.CTYPE_sint64 = self.TYPE_sint64
         self.CTYPE_fixed64 = self.TYPE_fixed64
         self.CTYPE_sfixed64 = self.TYPE_sfixed64
+        self.CTYPE_double = self.TYPE_double
 
     def _get_submessage(self, field, typ, name):
         cdef char *res
@@ -99,6 +102,7 @@ cdef class ProtoBase:
         cdef int32_t si
         cdef int64_t sq
         cdef uint64_t uq
+        cdef double db
 
         cdef int got
         if ctyp == self.CTYPE_string:
@@ -131,6 +135,12 @@ cdef class ProtoBase:
             if not got:
                 raise ProtoFieldMissing(name)
             return uq
+        elif ctyp == self.CTYPE_double:
+            got = pbf_get_integer(self.buf,
+                    field, <uint64_t*>&db)
+            if not got:
+                raise ProtoFieldMissing(name)
+            return db
         elif ctyp == self.CTYPE_int64 or \
              ctyp == self.CTYPE_sfixed64:
             got = pbf_get_signed_integer(self.buf,
@@ -191,6 +201,9 @@ cdef class ProtoBase:
                         pbf_set_integer(self.buf, f, v, 64)
                     elif ctyp == self.CTYPE_sfixed64:
                         bytes = struct.unpack('Q', struct.pack('q', v))[0]
+                        pbf_set_integer(self.buf, f, bytes, 64)
+                    elif ctyp == self.CTYPE_double:
+                        bytes = struct.unpack('Q', struct.pack('d', v))[0]
                         pbf_set_integer(self.buf, f, bytes, 64)
                     else:
                         assert 0, "unimplemented"

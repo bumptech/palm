@@ -16,6 +16,8 @@ message Test {
     optional fixed64 g = 9;
     optional sfixed64 h = 10;
     optional sfixed64 i = 11;
+
+    optional double k = 12;
 }
 
 
