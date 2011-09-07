@@ -6,8 +6,6 @@ ctypedef unsigned long long uint64_t
 cdef extern from "stdlib.h":
     void free(void *)
 
-import struct
-
 cdef extern from "palmcore.h":
     ctypedef struct pbf_protobuf:
         pass
@@ -171,6 +169,9 @@ cdef class ProtoBase:
 
     def _save(self, mods, cache):
         cdef int ctyp
+        cdef int64_t sq
+        cdef double db
+
         for f, v in cache.iteritems():
             if f in mods:
                 typ = mods[f]
@@ -200,11 +201,11 @@ cdef class ProtoBase:
                     elif ctyp == self.CTYPE_fixed64:
                         pbf_set_integer(self.buf, f, v, 64)
                     elif ctyp == self.CTYPE_sfixed64:
-                        bytes = struct.unpack('Q', struct.pack('q', v))[0]
-                        pbf_set_integer(self.buf, f, bytes, 64)
+                        sq = v
+                        pbf_set_integer(self.buf, f, (<uint64_t*>&sq)[0], 64)
                     elif ctyp == self.CTYPE_double:
-                        bytes = struct.unpack('Q', struct.pack('d', v))[0]
-                        pbf_set_integer(self.buf, f, bytes, 64)
+                        db = v
+                        pbf_set_integer(self.buf, f, (<uint64_t*>&db)[0], 64)
                     else:
                         assert 0, "unimplemented"
 
