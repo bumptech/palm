@@ -30,6 +30,10 @@ class TestProto(object):
             i=-2**63,
 
             k=10.4,
+
+            l=2**32-1,
+            m=2**31-1,
+            n=-2**31,
             )
 
     def test_fields(self):
@@ -61,8 +65,11 @@ class TestProto(object):
     def test_int64(self):
         self.fields_test('d', 'e', 'f')
 
-    def test_fixed(self):
+    def test_fixed64(self):
         self.fields_test('g', 'h', 'i')
 
     def test_double(self):
         self.fields_test('k')
+
+    def test_fixed32(self):
+        self.fields_test('l', 'm', 'n')

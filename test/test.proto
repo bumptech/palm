@@ -18,6 +18,10 @@ message Test {
     optional sfixed64 i = 11;
 
     optional double k = 12;
+
+    optional fixed32 l = 13;
+    optional sfixed32 m = 14;
+    optional sfixed32 n = 15;
 }
 
 
