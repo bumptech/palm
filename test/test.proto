@@ -1,8 +1,11 @@
-message Test {
+//Test Comment 0
+message Test { //Test Comment 1
     optional string sha1 = 1;
 
+    //Test Comment 2
+
     optional uint32 a = 2;
-    optional int32 b = 3;
+    optional int32 b = 3; //Test Comment 3
     optional sint32 c = 4;
 
     optional uint64 d = 5;

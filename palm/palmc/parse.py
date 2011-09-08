@@ -3,7 +3,8 @@ from simpleparse.dispatchprocessor import DispatchProcessor, dispatch, dispatchL
 
 protofile = r'''
 root                    := whitespace*, message+
-<whitespace>            := [ \t\n]
+<whitespace>            := comment / [ \t\n]
+comment                 := "//", -"\n"*
 message                 := message_start, message_label!, whitespace*, message_body, whitespace*
 <message_start>         := "message", whitespace+
 message_label           := [a-zA-Z], [a-z0-9A-Z_]*
