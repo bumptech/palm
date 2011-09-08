@@ -1,7 +1,7 @@
  [x] Nested Messages
  [ ] Repeated
  [x] Fixed fields
- [ ] More .proto syntax: defaults, comments
+ [x] More .proto syntax: defaults, comments
  [x] Double/float
  [ ] Enum/Bool
  [ ] Heavy tests against google's official lib
