@@ -97,7 +97,7 @@ def write_field(num, field):
     def _establish_parentage_%s(self, v):
         if isinstance(v, (ProtoBase, RepeatedSequence)):
             if v._pbf_parent_callback:
-                assert (v._pbf_parent_callback == self._mod_%s), "subobjects can only have one parent"
+                assert (v._pbf_parent_callback == self._mod_%s), "subobjects can only have one parent--use copy()?"
             else:
                 v._pbf_parent_callback = self._mod_%s
                 v._pbf_establish_parent_callback = self._establish_parentage_%s
@@ -113,6 +113,8 @@ def write_field(num, field):
 
     def _mod_%s(self):
         self._evermod = True
+        if self._pbf_parent_callback:
+            self._pbf_parent_callback()
         self._mods[%s] = self.TYPE_%s
 
     def _del_%s(self):
