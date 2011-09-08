@@ -14,7 +14,7 @@ import test_pb2
 
 class TestProto(object):
     def get_proto(self):
-        return test_pb2.Test(
+        pb = test_pb2.Test(
             sha1="thesha",
 
             a=911111,
@@ -37,6 +37,11 @@ class TestProto(object):
 
             o=float(253),
             )
+
+        pb.r_i32.append(8)
+        pb.r_i32.append(5)
+        pb.r_i32.append(0)
+        return pb
 
     def test_fields(self):
         pb = self.get_proto()
@@ -78,6 +83,9 @@ class TestProto(object):
 
     def test_float(self):
         self.fields_test('o')
+
+    def test_repeated_int32(self):
+        self.fields_test("r_i32")
 
     def test_default(self):
         pb = self.get_proto()
