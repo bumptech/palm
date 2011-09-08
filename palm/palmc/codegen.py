@@ -104,6 +104,7 @@ def write_field(num, field):
                 v._pbf_establish_parent_callback = self._establish_parentage_%s
 
     def _set_%s(self, v):
+        self._evermod = True
         if self._pbf_parent_callback:
             self._pbf_parent_callback()
         if isinstance(v, (ProtoBase, RepeatedSequence)):
@@ -116,6 +117,7 @@ def write_field(num, field):
         self._mods[%s] = self.TYPE_%s
 
     def _del_%s(self):
+        self._evermod = True
         if self._pbf_parent_callback:
             self._pbf_parent_callback()
         if %s in self._cache:
