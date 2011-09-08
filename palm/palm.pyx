@@ -71,7 +71,13 @@ cdef class ProtoBase:
      TYPE_uint64,
      TYPE_sint32,
      TYPE_sint64,
-     ) = range(8)
+     TYPE_fixed64,
+     TYPE_sfixed64,
+     TYPE_double,
+     TYPE_fixed32,
+     TYPE_sfixed32,
+     TYPE_float,
+     ) = range(14)
 
     cdef pbf_protobuf *buf
 
@@ -83,6 +89,12 @@ cdef class ProtoBase:
     cdef int CTYPE_uint64
     cdef int CTYPE_sint32
     cdef int CTYPE_sint64
+    cdef int CTYPE_fixed64
+    cdef int CTYPE_sfixed64
+    cdef int CTYPE_double
+    cdef int CTYPE_fixed32
+    cdef int CTYPE_sfixed32
+    cdef int CTYPE_float
 
     def __init__(self, data):
         self._data = data
@@ -99,6 +111,12 @@ cdef class ProtoBase:
         self.CTYPE_uint64 = self.TYPE_uint64
         self.CTYPE_sint32 = self.TYPE_sint32
         self.CTYPE_sint64 = self.TYPE_sint64
+        self.CTYPE_fixed64 = self.TYPE_fixed64
+        self.CTYPE_sfixed64 = self.TYPE_sfixed64
+        self.CTYPE_double = self.TYPE_double
+        self.CTYPE_fixed32 = self.TYPE_fixed32
+        self.CTYPE_sfixed32 = self.TYPE_sfixed32
+        self.CTYPE_float = self.TYPE_float
 
     def _get_submessage(self, field, typ, name):
         cdef char *res
@@ -161,6 +179,8 @@ cdef class ProtoBase:
         cdef int32_t si
         cdef int64_t sq
         cdef uint64_t uq
+        cdef double db
+        cdef float fl
 
         cdef int got
         if ctyp == self.CTYPE_string:
@@ -173,7 +193,8 @@ cdef class ProtoBase:
             if not got:
                 raise ProtoFieldMissing(name)
             return res[:rlen]
-        elif ctyp == self.CTYPE_int32:
+        elif ctyp == self.CTYPE_int32 or \
+             ctyp == self.CTYPE_sfixed32:
             got = pbf_get_signed_integer(self.buf,
                     field, NULL, &si, 0)
             if not got:
@@ -185,13 +206,30 @@ cdef class ProtoBase:
             if not got:
                 raise ProtoFieldMissing(name)
             return si
-        elif ctyp == self.CTYPE_uint32 or ctyp == self.CTYPE_uint64:
+        elif ctyp == self.CTYPE_uint32 or \
+             ctyp == self.CTYPE_uint64 or \
+             ctyp == self.CTYPE_fixed64 or \
+             ctyp == self.CTYPE_fixed32:
             got = pbf_get_integer(self.buf,
                     field, &uq)
             if not got:
                 raise ProtoFieldMissing(name)
             return uq
-        elif ctyp == self.CTYPE_int64:
+        elif ctyp == self.CTYPE_double:
+            got = pbf_get_integer(self.buf,
+                    field, <uint64_t*>&db)
+            if not got:
+                raise ProtoFieldMissing(name)
+            return db
+        elif ctyp == self.CTYPE_float:
+            got = pbf_get_integer(self.buf,
+                    field, &uq)
+            if not got:
+                raise ProtoFieldMissing(name)
+            fl = (<float*>&uq)[0]
+            return fl
+        elif ctyp == self.CTYPE_int64 or \
+             ctyp == self.CTYPE_sfixed64:
             got = pbf_get_signed_integer(self.buf,
                     field, &sq, NULL, 0)
             if not got:
@@ -227,6 +265,10 @@ cdef class ProtoBase:
 
     def _save(self, mods, cache):
         cdef int ctyp
+        cdef int64_t sq
+        cdef double db
+        cdef float fl
+
         for f, v in cache.iteritems():
             if f in mods:
                 typ = mods[f]
@@ -255,6 +297,22 @@ cdef class ProtoBase:
                         pbf_set_signed_integer(self.buf, f, v, 0)
                     elif ctyp == self.CTYPE_sint32 or ctyp == self.CTYPE_sint64:
                         pbf_set_signed_integer(self.buf, f, v, 1)
+                    elif ctyp == self.CTYPE_fixed64:
+                        pbf_set_integer(self.buf, f, v, 64)
+                    elif ctyp == self.CTYPE_fixed32:
+                        pbf_set_integer(self.buf, f, v, 32)
+                    elif ctyp == self.CTYPE_sfixed64:
+                        sq = v
+                        pbf_set_integer(self.buf, f, (<uint64_t*>&sq)[0], 64)
+                    elif ctyp == self.CTYPE_sfixed32:
+                        sq = v
+                        pbf_set_integer(self.buf, f, (<uint64_t*>&sq)[0], 32)
+                    elif ctyp == self.CTYPE_double:
+                        db = v
+                        pbf_set_integer(self.buf, f, (<uint64_t*>&db)[0], 64)
+                    elif ctyp == self.CTYPE_float:
+                        fl = v
+                        pbf_set_integer(self.buf, f, (<uint32_t*>&fl)[0], 64)
                     else:
                         assert 0, "unimplemented"
 

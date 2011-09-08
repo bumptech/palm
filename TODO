@@ -5,8 +5,8 @@
  [ ] Enum/Bool
  [ ] Limit field numbers >= 1 and < 100k at higher levels (esp on set side)
 
- [ ] Fixed fields
- [ ] Double/float
+ [x] Fixed fields
+ [x] Double/float
  [ ] More .proto syntax: defaults, comments
 
  [ ] Heavy tests against google's official lib

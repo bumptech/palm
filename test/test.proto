@@ -1,0 +1,35 @@
+message Test {
+    optional string sha1 = 1;
+
+    optional uint32 a = 2;
+    optional int32 b = 3;
+    optional sint32 c = 4;
+
+    optional uint64 d = 5;
+    optional int64 e = 6;
+    optional sint64 f = 7;
+
+    message Foo {
+        optional string baz = 8;
+    }
+
+    optional fixed64 g = 9;
+    optional sfixed64 h = 10;
+    optional sfixed64 i = 11;
+
+    optional double k = 12;
+
+    optional fixed32 l = 13;
+    optional sfixed32 m = 14;
+    optional sfixed32 n = 15;
+
+    optional float o = 16;
+
+    optional uint32 p = 17 [default = 13];
+    optional float q = 18 [default = 23.4];
+    optional string r = 19 [default = "cats"];
+}
+
+message Mess2 {
+    required string foo=1;
+}

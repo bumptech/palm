@@ -11,14 +11,20 @@ section                 := [a-z]+, [ \t\n]+
 message_body            := "{"!,whitespace*,field_list,whitespace*,"}"!
 >field_list<            := field_opt*
 >field_opt<             := message / field
-field                   := field_require, whitespace+!, field_type!, whitespace+!, field_name!, whitespace*, "="!, whitespace*, field_num!, whitespace*, ";"!, whitespace*
+field                   := field_require, whitespace+!, field_type!, whitespace+!, field_name!, whitespace*, "="!, whitespace*, field_num!, whitespace*, field_default?, ";"!, whitespace*
 field_require           := "repeated" / "optional" / "required"
 field_type              := [a-zA-Z], [a-z0-9A-Z_]*
 field_name              := [a-zA-Z], [a-z0-9A-Z_]*
 field_num               := [0-9]+
+field_default           := "[", "default", whitespace*, "=", whitespace*, field_default_value, whitespace*, "]"
+field_default_value     := field_default_value_s / field_default_value_f / field_default_value_i
+field_default_value_s   := '"', -'"'*, '"'
+field_default_value_i   := [0-9]+
+field_default_value_f   := [0-9]+, field_default_value_fd+
+field_default_value_fd  := ".", [0-9]+
 '''
 
-class ProtoParseError(Exception): 
+class ProtoParseError(Exception):
     def __init__(self, start, end, buf, message):
         line = lines(start, end, buffer)
         Exception.__init__("[line %s] " ++ message)
@@ -69,8 +75,16 @@ class ProtoProcessor(DispatchProcessor):
         return int(buffer[start:stop])
 
     def field(self, (tag, start, stop, subtags), buffer):
-        req,typ,name,num = dispatchList(self, subtags, buffer)
-        self.messages[self.current_message][0][num] = req,typ,name
+        res = dispatchList(self, subtags, buffer)
+        if len(res) == 4:
+            res.append(None)
+        req,typ,name,num,default = res
+        self.messages[self.current_message][0][num] = req,typ,name,default
+
+    def field_default(self, (tag, start, stop, subtags), buffer):
+        tag, start, stop, subtags = subtags[0]
+        return buffer[start:stop]
+
 
 class ProtoParser(Parser):
     def buildProcessor(self):
@@ -78,7 +92,8 @@ class ProtoParser(Parser):
 
 parser = ProtoParser(protofile)
 
-r = parser.parse(open("test.proto").read())
+from sys import stdin
+r = parser.parse(stdin.read())
 
 from codegen import gen_module
 

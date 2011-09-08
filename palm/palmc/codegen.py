@@ -9,7 +9,7 @@ def gen_module(messages):
 
     out('from palm import ProtoBase, RepeatedSequence\n\n')
     for (n, fields, subs) in messages:
-        write_class(n, fields, subs)   
+        write_class(n, fields, subs)
 
     all = ''.join(o)
 
@@ -37,7 +37,14 @@ class %s(ProtoBase):
         self._pbf_parent_callback = _pbf_parent_callback
         self._pbf_establish_parent_callback = None
 
-''' % name)
+    def fields(self):
+        return ['%s']
+
+    def __str__(self):
+        return '\\n'.join('%%s: %%s' %% (f, repr(getattr(self, '_get_%%s' %% f)())) for f in self.fields()
+                          if getattr(self, '%%s__exists' %% f))
+''' % (name,
+       "', '".join(name for _, _, name, _ in fields.values())))
     for sn, (sf, ss) in subs:
         pfx += "    "
         write_class(sn, sf, ss)
@@ -52,8 +59,21 @@ class %s(ProtoBase):
     for num, field in fields.iteritems():
         write_field(num, field)
 
+def write_field_get(num, field):
+    _, type, name, default = field
+    if default is not None:
+        r = '''
+            try:
+                r = self._buf_get(%s, self.TYPE_%s, '%s')
+            except:
+                r = ''' + str(default)
+    else:
+        r = '''
+            r = self._buf_get(%s, self.TYPE_%s, '%s')'''
+    return r % (num, type, name)
+
 def write_field(num, field):
-    req, type, name = field
+    req, type, name, default = field
     if req == 'repeated':
         out(
 '''
@@ -71,8 +91,7 @@ def write_field(num, field):
     def _get_%s(self):
         if %s in self._cache:
             r = self._cache[%s]
-        else:
-            r = self._buf_get(%s, self.TYPE_%s, '%s')
+        else:%s
             self._cache[%s] = r
         return r
 
@@ -111,7 +130,7 @@ def write_field(num, field):
     def %s__exists(self):
         return %s in self._mods or self._buf_exists(%s)
 
-''' % (name, num, num, num, type, name, num,
+''' % (name, num, num, write_field_get(num, field), num,
     name, name, name, name,
     name, name, num, num, type,
     name, num, type,
