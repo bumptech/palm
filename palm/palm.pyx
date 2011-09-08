@@ -371,10 +371,6 @@ cdef class RepeatedSequence(list):
         self._pbf_child_touched()
         list.__delitem__(self, i)
 
-    def __delslice__(self, s, e):
-        self._pbf_child_touched()
-        list.__delslice__(self, s, e)
-
     def __setitem__(self, k, v):
         self._pbf_child_touched(v)
         list.__setitem__(self, k, v)
