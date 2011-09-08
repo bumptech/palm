@@ -29,8 +29,38 @@ cdef extern from "palmcore.h":
 
     void pbf_remove(pbf_protobuf *pbf, uint64_t field_num)
 
+    ctypedef void(*pbf_byte_stream_callback) (char *, uint64_t length, void *)
+    ctypedef void(*pbf_uint_stream_callback) (uint64_t, void *)
+    ctypedef void(*pbf_sint_stream_callback) (int64_t, int32_t, void *)
+
+    int pbf_get_bytes_stream(pbf_protobuf *pbf, uint64_t field_num,
+            pbf_byte_stream_callback cb, void *passthrough)
+
+    int pbf_get_integer_stream(pbf_protobuf *pbf, uint64_t field_num, 
+            pbf_uint_stream_callback cb, void *passthrough)
+
+    int pbf_get_signed_integer_stream(pbf_protobuf *pbf,
+            uint64_t field_num, int use_32, int use_zigzag,
+            pbf_sint_stream_callback cb, void *passthrough)
+
 class ProtoFieldMissing(Exception): pass
 class ProtoDataError(Exception): pass
+
+cdef void byte_string_cb(char *s, uint64_t l, void *ar):
+    py_s = unicode(s[:l], "utf-8")
+    (<object>ar).append(py_s)
+
+cdef void byte_byte_cb(char *s, uint64_t l, void *ar):
+    (<object>ar).append(s[:l])
+
+cdef void signed_signed32_cb(int64_t i64, int32_t i32, void *ar):
+    (<object>ar).append(i32)
+
+cdef void signed_signed64_cb(int64_t i64, int32_t i32, void * ar):
+    (<object>ar).append(i64)
+    
+cdef void unsigned_get(uint64_t u64, void * ar):
+    (<object>ar).append(u64)
 
 cdef class ProtoBase:
     (TYPE_string,
@@ -42,6 +72,7 @@ cdef class ProtoBase:
      TYPE_sint32,
      TYPE_sint64,
      ) = range(8)
+
     cdef pbf_protobuf *buf
 
     cdef int CTYPE_string
@@ -56,6 +87,7 @@ cdef class ProtoBase:
     def __init__(self, data):
         self._data = data
         self.buf = pbf_load(data, len(data))
+        self._evermod = False
         if (self.buf == NULL):
             self._data = None
             raise ProtoDataError("Invalid or unsupported protobuf data")
@@ -81,10 +113,48 @@ cdef class ProtoBase:
         inst = typ(bout, getattr(self, '_mod_%s' % name))
         return inst
 
+    def _get_repeated(self, field, typ, name):
+        cdef int ctyp = typ.pb_subtype
+
+        l = []
+
+        if ctyp == self.CTYPE_string:
+            pbf_get_bytes_stream(self.buf, field, 
+                    byte_string_cb, <void *>l)
+        elif ctyp == self.CTYPE_bytes:
+            pbf_get_bytes_stream(self.buf, field, 
+                    byte_byte_cb, <void *>l)
+        elif ctyp == self.CTYPE_int32:
+            pbf_get_signed_integer_stream(self.buf,
+                    field, 1, 0, signed_signed32_cb,
+                    <void *>l)
+        elif ctyp == self.CTYPE_sint32:
+            pbf_get_signed_integer_stream(self.buf,
+                    field, 1, 1, signed_signed32_cb,
+                    <void *>l)
+        elif ctyp == self.CTYPE_uint32 or ctyp == self.CTYPE_uint64:
+            pbf_get_integer_stream(self.buf, field, 
+                    unsigned_get, <void *>l)
+        elif ctyp == self.CTYPE_int64:
+            pbf_get_signed_integer_stream(self.buf,
+                    field, 0, 0, signed_signed64_cb,
+                    <void *>l)
+        elif ctyp == self.CTYPE_sint64:
+            pbf_get_signed_integer_stream(self.buf,
+                    field, 0, 1, signed_signed64_cb,
+                    <void *>l)
+
+        # Implied: l may be empty if there were no values
+        t = typ(l)
+        setattr(self, name, t) # invoke usual handlers, etc
+        return t
 
     def _buf_get(self, field, typ, name):
         if type(typ) is not int:
-            return self._get_submessage(field, typ, name)
+            if issubclass (typ, ProtoBase):
+                return self._get_submessage(field, typ, name)
+            else: # repeated
+                return self._get_repeated(field, typ, name)
         cdef int ctyp = typ
         cdef char *res
         cdef uint64_t rlen
@@ -148,6 +218,13 @@ cdef class ProtoBase:
         if self.buf != NULL:
             pbf_free(self.buf)
 
+    def dumps(self):
+        if not self._evermod:
+            return self._data
+        self._save(self._mods, self._cache)
+        self.mods = {}
+        return self._serialize()
+
     def _save(self, mods, cache):
         cdef int ctyp
         for f, v in cache.iteritems():
@@ -158,6 +235,8 @@ cdef class ProtoBase:
                     l = len(o)
                     pbf_set_bytes(self.buf,
                         f, o, l)
+                elif isinstance(v, RepeatedSequence):
+                    raise NotImplementedError("dumps repeated") # XXX save list!
                 else:
                     ctyp = typ
                     if ctyp == self.CTYPE_string:
@@ -186,3 +265,49 @@ cdef class ProtoBase:
         pyout = cout[:length]
         free(cout)
         return pyout
+
+    def copy(self):
+        return self.__class__(self.dumps())
+
+cdef class RepeatedSequence(list):
+    pb_subtype = None
+    def __init__(self, *args, **kw):
+        list.__init__(self, *args, **kw)
+        self._pbf_establish_parent_callback = None
+        self._pbf_parent_callback = None
+
+    def _pbf_child_touched(self, v=None):
+        if isinstance(v, (ProtoBase, RepeatedSequence)):
+            self._pbf_establish_parent_callback(v)
+        self._pbf_parent_callback()
+
+    # now--the ugly business of intercepting list modifications
+    def __delitem__(self, i):
+        self._pbf_child_touched()
+        list.__delitem__(self, i)
+
+    def __delslice__(self, s, e):
+        self._pbf_child_touched()
+        list.__delslice__(self, s, e)
+
+    def __setitem__(self, k, v):
+        self._pbf_child_touched(v)
+        list.__setitem__(self, k, v)
+
+    def append(self, v):
+        self._pbf_child_touched(v)
+        list.append(self, v)
+
+    def extend(self, vs):
+        for v in vs:
+            self.append(v)
+
+    def insert(self, i, v):
+        self._pbf_child_touched(v)
+        list.insert(self, i, v)
+
+    def copy(self):
+        '''Essentially, shed parentage
+        '''
+        l = list(self)
+        return RepeatedSequence(l)

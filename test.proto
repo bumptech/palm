@@ -12,6 +12,10 @@ message Test {
     message Foo {
         optional string baz = 8;
     }
+
+    optional Foo the_foo = 9;
+
+    repeated int32 bars = 10;
 }
 
 

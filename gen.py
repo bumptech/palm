@@ -10,5 +10,8 @@ t = Test(sha1="thesha",
         e=-911111111111111,
         f=-911111111111111,
         )
+t.bars.append(8)
+t.bars.append(5)
+t.bars.append(0)
 print t
 open("gen", "wb").write(t.SerializeToString())

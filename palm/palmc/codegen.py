@@ -1,4 +1,5 @@
 import sys
+from palm import ProtoBase
 pfx = ''
 o = []
 def gen_module(messages):
@@ -6,7 +7,7 @@ def gen_module(messages):
     global o
     pfx = ''
 
-    out('from palm import ProtoBase\n\n')
+    out('from palm import ProtoBase, RepeatedSequence\n\n')
     for (n, fields, subs) in messages:
         write_class(n, fields, subs)   
 
@@ -34,11 +35,7 @@ class %s(ProtoBase):
         self._cache = {}
         self._mods = {}
         self._pbf_parent_callback = _pbf_parent_callback
-
-    def dumps(self):
-        self._save(self._mods, self._cache)
-        self.mods = {}
-        return self._serialize()
+        self._pbf_establish_parent_callback = None
 
 ''' % name)
     for sn, (sf, ss) in subs:
@@ -56,7 +53,19 @@ class %s(ProtoBase):
         write_field(num, field)
 
 def write_field(num, field):
-    _, type, name = field
+    req, type, name = field
+    if req == 'repeated':
+        out(
+'''
+    class Repeated_%s(RepeatedSequence): 
+        pb_subtype = %sTYPE_%s
+
+    TYPE_Repeated_%s = Repeated_%s
+''' % (name, 
+    'ProtoBase.' if hasattr(ProtoBase, 'TYPE_%s' % type) else '',
+    type, name, name)
+    )
+        type = 'Repeated_%s' % name
     out(
 '''
     def _get_%s(self):
@@ -67,15 +76,24 @@ def write_field(num, field):
             self._cache[%s] = r
         return r
 
+    def _establish_parentage_%s(self, v):
+        if isinstance(v, (ProtoBase, RepeatedSequence)):
+            if v._pbf_parent_callback:
+                assert (v._pbf_parent_callback == self._mod_%s), "subobjects can only have one parent"
+            else:
+                v._pbf_parent_callback = self._mod_%s
+                v._pbf_establish_parent_callback = self._establish_parentage_%s
+
     def _set_%s(self, v):
         if self._pbf_parent_callback:
             self._pbf_parent_callback()
-        if isinstance(v, ProtoBase):
-            v._pbf_parent_callback = self._mod_%s
+        if isinstance(v, (ProtoBase, RepeatedSequence)):
+            self._establish_parentage_%s(v)
         self._cache[%s] = v
         self._mods[%s] = self.TYPE_%s
 
     def _mod_%s(self):
+        self._evermod = True
         self._mods[%s] = self.TYPE_%s
 
     def _del_%s(self):
@@ -94,6 +112,7 @@ def write_field(num, field):
         return %s in self._mods or self._buf_exists(%s)
 
 ''' % (name, num, num, num, type, name, num,
+    name, name, name, name,
     name, name, num, num, type,
     name, num, type,
     name, num, num, num, num, num,

@@ -8,6 +8,8 @@ typedef enum {
     pbf_type_fixed32 = 5
 } pbf_field_type;
 
+#define SLAB_SIZE 1000
+
 typedef struct pbf_mark {
     char exists;
     pbf_field_type ftype;
@@ -23,6 +25,10 @@ typedef struct pbf_mark {
     uint64_t raw_len; // copy if nonzero
     unsigned char buf[20]; // for new ints or headers
     unsigned char buf_len; // copy if nonzero
+    struct pbf_mark *last;
+    struct pbf_mark *next;
+    struct pbf_mark **slabs;
+    uint32_t num_slabs;
 } pbf_mark;
 
 typedef struct pbf_protobuf {
@@ -59,5 +65,20 @@ int pbf_set_signed_integer(pbf_protobuf *pbf, uint64_t field_num,
 unsigned char *pbf_serialize(pbf_protobuf *pbf, int *length);
 
 void pbf_remove(pbf_protobuf *pbf, uint64_t field_num);
+
+
+typedef void(*pbf_byte_stream_callback) (char *, uint64_t length, void *);
+typedef void(*pbf_uint_stream_callback) (uint64_t, void *);
+typedef void(*pbf_sint_stream_callback) (int64_t, int32_t, void *);
+
+int pbf_get_bytes_stream(pbf_protobuf *pbf, uint64_t field_num,
+        pbf_byte_stream_callback cb, void *passthrough);
+
+int pbf_get_integer_stream(pbf_protobuf *pbf, uint64_t field_num, 
+        pbf_uint_stream_callback cb, void *passthrough);
+
+int pbf_get_signed_integer_stream(pbf_protobuf *pbf,
+        uint64_t field_num, int use_32, int use_zigzag,
+        pbf_sint_stream_callback cb, void *passthrough);
 
 #endif /* PALMCORE_H */

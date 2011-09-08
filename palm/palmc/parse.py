@@ -12,7 +12,7 @@ message_body            := "{"!,whitespace*,field_list,whitespace*,"}"!
 >field_list<            := field_opt*
 >field_opt<             := message / field
 field                   := field_require, whitespace+!, field_type!, whitespace+!, field_name!, whitespace*, "="!, whitespace*, field_num!, whitespace*, ";"!, whitespace*
-field_require           := "optional" / "required"
+field_require           := "repeated" / "optional" / "required"
 field_type              := [a-zA-Z], [a-z0-9A-Z_]*
 field_name              := [a-zA-Z], [a-z0-9A-Z_]*
 field_num               := [0-9]+

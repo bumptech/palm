@@ -52,11 +52,18 @@ static int pbf_ensure_space(pbf_protobuf *pbf, int max) {
         return 0; // refuse to allocate this much ram
 
     int mark = pbf->num_marks;
+    pbf_mark * cur;
     pbf->num_marks = max + 100;
     pbf->marks = realloc(pbf->marks, sizeof(pbf_mark) * pbf->num_marks);
 
-    for (; mark < pbf->num_marks; mark++)
-        pbf->marks[mark].exists = 0;
+    for (; mark < pbf->num_marks; mark++) {
+        cur = &pbf->marks[mark];
+        cur->exists = 0;
+        cur->last = cur;
+        cur->next = NULL;
+        cur->slabs = NULL;
+        cur->num_slabs = 0;
+    }
 
     return 1;
 }
@@ -74,6 +81,54 @@ void pbf_remove(pbf_protobuf *pbf, uint64_t field_num) {
     pbf->marks[field_num].exists = 0;
 }
 
+static void pbf_add_slab(pbf_mark *head) {
+    int i;
+    assert(head->last->next == NULL);
+    pbf_mark *cur;
+    head->num_slabs++;
+    head->slabs = (pbf_mark **)realloc(head->slabs, head->num_slabs * sizeof(pbf_mark *));
+    pbf_mark *slab = head->slabs[head->num_slabs - 1] = (pbf_mark *)malloc(SLAB_SIZE * sizeof(pbf_mark));
+    for (i=0; i < SLAB_SIZE; i++) {
+        cur = slab + i;
+        cur->exists = 0;
+        cur->last = NULL;
+        cur->next = slab + (i + 1);
+        cur->slabs = NULL;
+        cur->num_slabs = 0;
+    }
+    slab[SLAB_SIZE - 1].next = NULL;
+    head->last->next = slab;
+}
+
+static inline pbf_mark * pbf_get_mark_for_write(pbf_protobuf *pbf, 
+    uint64_t field_num, uint64_t field_type, pbf_mark **rhead) {
+    pbf_mark *cur, *head;
+    int success;
+
+    if (field_num >= pbf->num_marks) {
+        success = pbf_ensure_space(pbf, field_num);
+        if (!success) return NULL; // cannot handle high field numbers with design
+    }
+
+    if (field_num > pbf->max_mark)
+        pbf->max_mark = field_num;
+    
+    head = &pbf->marks[field_num];
+    cur = head->last;
+    if (cur->exists) {
+        if (!cur->next) {
+            pbf_add_slab(head);
+        }
+        cur = head->last->next;
+    }
+    cur->exists = 1;
+    cur->ftype = field_type;
+
+    *rhead = head;
+
+    return cur;
+}
+
 static void pbf_scan (pbf_protobuf *pbf) {
     uint64_t key;
     int success, iters;
@@ -82,6 +137,7 @@ static void pbf_scan (pbf_protobuf *pbf) {
     unsigned char *ptr = pbf->data;
     pbf->parsed = 0;
     unsigned char *limit = pbf->data + pbf->data_length;
+    pbf_mark *cur, *head;
     while (ptr < limit) {
         char *start = ptr;
         success = read_varint_value(&ptr, &key, &iters, limit);
@@ -90,18 +146,14 @@ static void pbf_scan (pbf_protobuf *pbf) {
         field_num = key >> 3;
         field_type = key & 7;
 
-        if (field_num >= pbf->num_marks) {
-            success = pbf_ensure_space(pbf, field_num);
-            if (!success) return; // cannot handle high field numbers with design
-        }
-        if (field_num > pbf->max_mark)
-            pbf->max_mark = field_num;
+        cur = pbf_get_mark_for_write(pbf, field_num, field_type, &head);
+        if (!cur) return; // something failed in alloc etc
 
-        pbf_mark *cur = &pbf->marks[field_num];
-        cur->exists = 1;
-        cur->ftype = field_type;
         cur->raw = start;
         cur->buf_len = 0;
+        head->last = cur;
+
+
         switch (field_type) {
             case pbf_type_varint:
                 if (!read_varint_value(&ptr, &cur->fdata.i64, &iters, limit)) return;
@@ -194,25 +246,191 @@ pbf_protobuf * pbf_load(char *data, uint64_t size) {
 }
 
 void pbf_free(pbf_protobuf *pbf) {
+    int i, j;
+    pbf_mark *cur;
+
+    /* free repeated slabs */
+    for (i=0; i <= pbf->max_mark; i++) {
+        cur = &pbf->marks[i];
+        if (cur->num_slabs) {
+            for (j=0; j< cur->num_slabs; j++)
+                free(cur->slabs[j]);
+            free(cur->slabs);
+        }
+    }
+
     if (pbf->marks)
         free(pbf->marks);
     free(pbf);
 }
 
-int pbf_get_bytes(pbf_protobuf *pbf, uint64_t field_num,
-        char **out, uint64_t *length) {
+static inline pbf_mark * pbf_get_field_mark(pbf_protobuf *pbf, 
+        uint64_t field_num,
+        int last) {
+    
     if (field_num < 0 || field_num > pbf->max_mark)
-        return 0;
+        return NULL;
+
     pbf_mark *cur = &pbf->marks[field_num];
     if (!cur->exists)
-        return 0;
+        return NULL;
+
+    return last ? cur->last : cur;
+}
+
+/***********************************************************************
+ * GET BYTES */
+
+static inline void pbf_raw_get_bytes(pbf_mark *cur,
+        char **out, uint64_t *length) {
 
     *out = cur->fdata.s.data;
     *length = cur->fdata.s.len;
+}
+
+int pbf_get_bytes(pbf_protobuf *pbf, uint64_t field_num,
+        char **out, uint64_t *length) {
+    pbf_mark *cur = pbf_get_field_mark(pbf, field_num, 1);
+    if (!cur) return 0;
+
+    pbf_raw_get_bytes(cur, out, length);
 
     return 1;
 }
 
+int pbf_get_bytes_stream(pbf_protobuf *pbf, uint64_t field_num,
+        pbf_byte_stream_callback cb, void *passthrough) {
+    pbf_mark *head;
+    pbf_mark *cur = pbf_get_field_mark(pbf, field_num, 0);
+    if (!cur) return 0;
+
+    head = cur;
+    char *v;
+    uint64_t length;
+
+    while (1) {
+        pbf_raw_get_bytes(cur, &v, &length);
+        cb(v, length, passthrough);
+        if (cur != head->last) break;
+        cur = cur->next;
+    }
+
+    return 1;
+}
+
+/*********************************************************************************
+ * GET UNSIGNED INTEGER, DOUBLE, FLOAT, ETC */
+static inline pbf_get_raw_integer(pbf_mark *cur, uint64_t *res) {
+    switch (cur->ftype) {
+        case pbf_type_fixed32:
+            *res = cur->fdata.i32;
+            break;
+        default:
+            *res = cur->fdata.i64;
+            break;
+    }
+}
+
+int pbf_get_integer(pbf_protobuf *pbf, uint64_t field_num, uint64_t *res) {
+    pbf_mark *cur = pbf_get_field_mark(pbf, field_num, 1);
+    if (!cur) return 0;
+
+    pbf_get_raw_integer(cur, res);
+    return 1;
+}
+
+int pbf_get_integer_stream(pbf_protobuf *pbf, uint64_t field_num, 
+        pbf_uint_stream_callback cb, void *passthrough) {
+    pbf_mark *head;
+    pbf_mark *cur = pbf_get_field_mark(pbf, field_num, 0);
+    if (!cur) return 0;
+    head = cur;
+    uint64_t v;
+
+    while (1) {
+        pbf_get_raw_integer(cur, &v);
+        cb(v, passthrough);
+        if (cur != head->last) break;
+        cur = cur->next;
+    }
+}
+
+
+/*********************************************************************************
+ * GET SIGNED INTEGERS */
+static inline int pbf_get_raw_signed_integer(pbf_mark *cur, int64_t *res,
+        int32_t *res32, int use_zigzag) {
+
+    int is_32 = res32 != NULL ? 1 : 0;
+    switch (cur->ftype) {
+        case pbf_type_fixed32:
+            assert(is_32);
+            assert(!use_zigzag);
+            *res32 = cur->fdata.i32;
+            break;
+        default:
+            if (!use_zigzag) {
+                if (is_32) {
+                    *res32 = (int32_t)cur->fdata.i64;
+                }
+                else
+                    *res = cur->fdata.i64;
+            }
+            else {
+                int64_t t = !(cur->fdata.i64 & 0x1) ? 
+                            cur->fdata.i64 >> 1 : 
+                            (cur->fdata.i64 >> 1) ^ (~0);
+
+                if (is_32) 
+                    *res32 = t;
+                else 
+                    *res = t;
+            }
+            break;
+    }
+}
+
+int pbf_get_signed_integer(pbf_protobuf *pbf,
+        uint64_t field_num, int64_t *res,
+        int32_t *res32, int use_zigzag) {
+    pbf_mark *cur = pbf_get_field_mark(pbf, field_num, 1);
+    if (!cur) return 0;
+
+    pbf_get_raw_signed_integer(cur, res, res32, use_zigzag);
+    return 1;
+}
+
+int pbf_get_signed_integer_stream(pbf_protobuf *pbf,
+        uint64_t field_num, int use_32, int use_zigzag,
+        pbf_sint_stream_callback cb, void *passthrough) {
+    pbf_mark *head;
+    pbf_mark *cur = pbf_get_field_mark(pbf, field_num, 0);
+    if (!cur) return 0;
+    head = cur;
+    
+    int64_t i64, *p64;
+    int32_t i32, *p32;
+
+    if (use_32) {
+        p64 = NULL;
+        p32 = &i32;
+    }
+    else {
+        p64 = &i64;
+        p32 = NULL;
+    }
+
+    while (1) {
+        pbf_get_raw_signed_integer(cur, p64, p32, use_zigzag);
+        cb(i64, i32, passthrough);
+        if (cur == head->last) break;
+        cur = cur->next;
+    }
+
+    return 1;
+}
+
+/* SET FUNCTIONS */
 int pbf_set_bytes(pbf_protobuf *pbf, uint64_t field_num,
         char *out, uint64_t length) {
     int resized;
@@ -232,6 +450,7 @@ int pbf_set_bytes(pbf_protobuf *pbf, uint64_t field_num,
     write_varint_value(&ptr, field_num << 3 | pbf_type_length);
     write_varint_value(&ptr, length);
     cur->buf_len = ptr - cur->buf;
+    cur->last = cur; // we're ignoring slabs at this point
 
     return 1;
 }
@@ -270,6 +489,7 @@ int pbf_set_integer(pbf_protobuf *pbf, uint64_t field_num,
         assert(0); // bad internal API call
 
     cur->buf_len = ptr - cur->buf;
+    cur->last = cur;
 
     return 1;
 }
@@ -302,116 +522,7 @@ int pbf_set_signed_integer(pbf_protobuf *pbf, uint64_t field_num,
     }
 
     cur->buf_len = ptr - cur->buf;
+    cur->last = cur;
 
     return 1;
 }
-
-int pbf_get_integer(pbf_protobuf *pbf, uint64_t field_num, uint64_t *res) {
-    if (field_num < 0 || field_num > pbf->max_mark)
-        return 0;
-    pbf_mark *cur = &pbf->marks[field_num];
-    if (!cur->exists)
-        return 0;
-    switch (cur->ftype) {
-        case pbf_type_fixed32:
-            *res = cur->fdata.i32;
-            break;
-        default:
-            *res = cur->fdata.i64;
-            break;
-    }
-
-    return 1;
-}
-
-int pbf_get_signed_integer(pbf_protobuf *pbf,
-        uint64_t field_num, int64_t *res,
-        int32_t *res32, int use_zigzag) {
-    if (field_num < 0 || field_num > pbf->max_mark)
-        return 0;
-    pbf_mark *cur = &pbf->marks[field_num];
-    if (!cur->exists)
-        return 0;
-
-    int is_32 = res32 != NULL ? 1 : 0;
-    switch (cur->ftype) {
-        case pbf_type_fixed32:
-            assert(is_32);
-            assert(!use_zigzag);
-            *res32 = cur->fdata.i32;
-            break;
-        default:
-            if (!use_zigzag) {
-                if (is_32) {
-                    *res32 = (int32_t)cur->fdata.i64;
-                }
-                else
-                    *res = cur->fdata.i64;
-            }
-            else {
-                int64_t t = !(cur->fdata.i64 & 0x1) ? 
-                            cur->fdata.i64 >> 1 : 
-                            (cur->fdata.i64 >> 1) ^ (~0);
-
-                if (is_32) 
-                    *res32 = t;
-                else 
-                    *res = t;
-            }
-            break;
-    }
-
-    return 1;
-}
-
-/*
-int main(int argc, char ** argv) {
-
-    char inp[500000];
-    int bread = read(0, &inp, 500000);
-
-    pbf_protobuf *pbf = pbf_load(inp, bread);
-
-    char *optr;
-    char buf[50];
-    uint64_t length;
-
-    pbf_get_bytes(pbf, 1, &optr, &length);
-    strncpy(buf, optr, length);
-    buf[length] = 0;
-    printf("1: %s\n", buf);
-
-    int32_t si;
-    uint32_t ui;
-    int64_t sl;
-    uint64_t ul;
-
-    // unsigned 32
-    pbf_get_integer(pbf, 2, &ul);
-    ui = ul;
-    printf("2: %u\n", ui);
-
-    // signed 32, not zigzag
-    pbf_get_signed_integer(pbf, 3, NULL, &si, 0);
-    printf("3: %d\n", si);
-
-    // signed 32, zigzag
-    pbf_get_signed_integer(pbf, 4, NULL, &si, 1);
-    printf("4: %d\n", si);
-
-    // unsigned 64
-    pbf_get_integer(pbf, 5, &ul);
-    printf("5: %llu\n", ul);
-
-    // signed 64, not zigzag
-    pbf_get_signed_integer(pbf, 6, &sl, NULL, 0);
-    printf("6: %lld\n", sl);
-
-    // signed 64, zigzag
-    pbf_get_signed_integer(pbf, 7, &sl, NULL, 1);
-    printf("7: %lld\n", sl);
-
-    pbf_free(pbf);
-    return 0;
-}
-*/
