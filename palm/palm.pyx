@@ -140,46 +140,58 @@ cdef class ProtoBase:
         return inst
 
     def _get_repeated(self, field, typ, name):
-        cdef int ctyp = typ.pb_subtype
+        cdef int ctyp
 
         l = []
+        if type(typ.pb_subtype) is not int:
+            sl = []
+            assert issubclass(typ.pb_subtype, ProtoBase)
+            pbf_get_bytes_stream(self.buf, field,
+                    byte_byte_cb, <void *>sl)
+            mod = getattr(self, '_mod_%s' % name)
+            for i in sl:
+                l.append(typ.pb_subtype(i, _pbf_parent_callback=mod))
 
-        if ctyp == self.CTYPE_string:
-            pbf_get_bytes_stream(self.buf, field, 
-                    byte_string_cb, <void *>l)
-        elif ctyp == self.CTYPE_bytes:
-            pbf_get_bytes_stream(self.buf, field, 
-                    byte_byte_cb, <void *>l)
-        elif ctyp == self.CTYPE_int32 or \
-             ctyp == self.CTYPE_sfixed32:
-            pbf_get_signed_integer_stream(self.buf,
-                    field, 1, 0, signed_signed32_cb,
-                    <void *>l)
-        elif ctyp == self.CTYPE_sint32:
-            pbf_get_signed_integer_stream(self.buf,
-                    field, 1, 1, signed_signed32_cb,
-                    <void *>l)
-        elif ctyp == self.CTYPE_uint32 or \
-             ctyp == self.CTYPE_uint64 or \
-             ctyp == self.CTYPE_fixed32 or \
-             ctyp == self.CTYPE_fixed64:
-            pbf_get_integer_stream(self.buf, field, 
-                    unsigned_get, <void *>l)
-        elif ctyp == self.CTYPE_int64 or \
-             ctyp == self.CTYPE_fixed64:
-            pbf_get_signed_integer_stream(self.buf,
-                    field, 0, 0, signed_signed64_cb,
-                    <void *>l)
-        elif ctyp == self.CTYPE_sint64:
-            pbf_get_signed_integer_stream(self.buf,
-                    field, 0, 1, signed_signed64_cb,
-                    <void *>l)
-        elif ctyp == self.CTYPE_double:
-            pbf_get_integer_stream(self.buf, field, 
-                    unsigned_double_get, <void *>l)
-        elif ctyp == self.CTYPE_float:
-            pbf_get_integer_stream(self.buf, field, 
-                    unsigned_float_get, <void *>l)
+        else:
+            ctyp = typ.pb_subtype
+            if ctyp == self.CTYPE_string:
+                pbf_get_bytes_stream(self.buf, field,
+                        byte_string_cb, <void *>l)
+            elif ctyp == self.CTYPE_bytes:
+                pbf_get_bytes_stream(self.buf, field,
+                        byte_byte_cb, <void *>l)
+            elif ctyp == self.CTYPE_int32 or \
+                 ctyp == self.CTYPE_sfixed32:
+                pbf_get_signed_integer_stream(self.buf,
+                        field, 1, 0, signed_signed32_cb,
+                        <void *>l)
+            elif ctyp == self.CTYPE_sint32:
+                pbf_get_signed_integer_stream(self.buf,
+                        field, 1, 1, signed_signed32_cb,
+                        <void *>l)
+            elif ctyp == self.CTYPE_uint32 or \
+                 ctyp == self.CTYPE_uint64 or \
+                 ctyp == self.CTYPE_fixed32 or \
+                 ctyp == self.CTYPE_fixed64:
+                pbf_get_integer_stream(self.buf, field, 
+                        unsigned_get, <void *>l)
+            elif ctyp == self.CTYPE_int64 or \
+                 ctyp == self.CTYPE_sfixed64:
+                pbf_get_signed_integer_stream(self.buf,
+                        field, 0, 0, signed_signed64_cb,
+                        <void *>l)
+            elif ctyp == self.CTYPE_sint64:
+                pbf_get_signed_integer_stream(self.buf,
+                        field, 0, 1, signed_signed64_cb,
+                        <void *>l)
+            elif ctyp == self.CTYPE_double:
+                pbf_get_integer_stream(self.buf, field, 
+                        unsigned_double_get, <void *>l)
+            elif ctyp == self.CTYPE_float:
+                pbf_get_integer_stream(self.buf, field, 
+                        unsigned_float_get, <void *>l)
+            else:
+                assert 0, ("unknown type %s" % typ.pb_subtype)
 
 
         # Implied: l may be empty if there were no values
@@ -299,7 +311,7 @@ cdef class ProtoBase:
             pbf_set_bytes(self.buf,
                 f, v, l)
         elif ctyp == self.CTYPE_uint32 or ctyp == self.CTYPE_uint64:
-            pbf_set_signed_integer(self.buf, f, v, 0)
+            pbf_set_integer(self.buf, f, v, 0)
         elif ctyp == self.CTYPE_int32 or ctyp == self.CTYPE_int64:
             pbf_set_signed_integer(self.buf, f, v, 0)
         elif ctyp == self.CTYPE_sint32 or ctyp == self.CTYPE_sint64:
@@ -319,7 +331,7 @@ cdef class ProtoBase:
             pbf_set_integer(self.buf, f, (<uint64_t*>&db)[0], 64)
         elif ctyp == self.CTYPE_float:
             fl = v
-            pbf_set_integer(self.buf, f, (<uint32_t*>&fl)[0], 64)
+            pbf_set_integer(self.buf, f, (<uint32_t*>&fl)[0], 32)
         else:
             assert 0, "unimplemented"
 
@@ -336,9 +348,17 @@ cdef class ProtoBase:
                     pbf_set_bytes(self.buf,
                         f, o, l)
                 elif isinstance(v, RepeatedSequence):
-                    ctyp = v.pb_subtype
-                    for i in v:
-                        self._save_item(f, ctyp, i)
+                    if type(v.pb_subtype) != int:
+                        assert issubclass(v.pb_subtype, ProtoBase)
+                        for i in v:
+                            o = i.dumps()
+                            l = len(o)
+                            pbf_set_bytes(self.buf,
+                            f, o, l)
+                    else:
+                        ctyp = v.pb_subtype
+                        for i in v:
+                            self._save_item(f, ctyp, i)
                 else:
                     ctyp = typ
                     self._save_item(f, ctyp, v)

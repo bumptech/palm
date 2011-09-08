@@ -1,4 +1,8 @@
 message Test {
+    message Foo {
+        optional string baz = 8;
+    }
+
     optional string sha1 = 1;
 
     optional uint32 a = 2;
@@ -8,10 +12,6 @@ message Test {
     optional uint64 d = 5;
     optional int64 e = 6;
     optional sint64 f = 7;
-
-    message Foo {
-        optional string baz = 8;
-    }
 
     optional fixed64 g = 9;
     optional sfixed64 h = 10;
@@ -25,13 +25,34 @@ message Test {
 
     optional float o = 16;
 
-    optional uint32 p = 17 [default = 13];
-    optional float q = 18 [default = 23.4];
-    optional string r = 19 [default = "cats"];
+    optional Foo msg = 17;
 
-    repeated int32 r_i32 = 30;
-}
+    optional uint32 p = 21 [default = 13];
+    optional float q = 22 [default = 23.4];
+    optional string r = 23 [default = "cats"];
 
-message Mess2 {
-    required string foo=1;
+    repeated string r_sha1 = 31;
+
+    repeated uint32 r_a = 32;
+    repeated int32 r_b = 33;
+    repeated sint32 r_c = 34;
+
+    repeated uint64 r_d = 35;
+    repeated int64 r_e = 36;
+    repeated sint64 r_f = 37;
+
+    repeated fixed64 r_g = 39;
+    repeated sfixed64 r_h = 40;
+    repeated sfixed64 r_i = 41;
+
+    repeated double r_k = 42;
+
+    repeated fixed32 r_l = 43;
+    repeated sfixed32 r_m = 44;
+    repeated sfixed32 r_n = 45;
+
+    repeated float r_o = 46;
+
+    repeated Foo r_msg = 47;
+    
 }

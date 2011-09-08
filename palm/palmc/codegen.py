@@ -57,7 +57,7 @@ class %s(ProtoBase):
 
     # TODO -- submessages
     for num, field in fields.iteritems():
-        write_field(num, field)
+        write_field(name, num, field)
 
 def write_field_get(num, type, name, default):
     if default is not None:
@@ -71,16 +71,17 @@ def write_field_get(num, type, name, default):
             r = self._buf_get(%s, self.TYPE_%s, '%s')'''
     return r % (num, type, name)
 
-def write_field(num, field):
+def write_field(cname, num, field):
     req, type, name, default = field
     if req == 'repeated':
         out(
 '''
     class Repeated_%s(RepeatedSequence): 
-        pb_subtype = %sTYPE_%s
+        pb_subtype = None 
+    Repeated_%s.pb_subtype = %sTYPE_%s
 
     TYPE_Repeated_%s = Repeated_%s
-''' % (name, 
+''' % (name, name,
     'ProtoBase.' if hasattr(ProtoBase, 'TYPE_%s' % type) else '',
     type, name, name)
     )

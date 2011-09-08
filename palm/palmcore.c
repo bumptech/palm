@@ -148,6 +148,7 @@ static void pbf_scan (pbf_protobuf *pbf) {
         success = read_varint_value(&ptr, &key, &iters, limit);
         if (!success) return;
 
+
         field_num = key >> 3;
         field_type = key & 7;
 
@@ -323,7 +324,7 @@ int pbf_get_bytes_stream(pbf_protobuf *pbf, uint64_t field_num,
     while (1) {
         pbf_raw_get_bytes(cur, &v, &length);
         cb(v, length, passthrough);
-        if (cur != head->last) break;
+        if (cur == head->last) break;
         cur = cur->next;
     }
 
@@ -362,7 +363,7 @@ int pbf_get_integer_stream(pbf_protobuf *pbf, uint64_t field_num,
     while (1) {
         pbf_get_raw_integer(cur, &v);
         cb(v, passthrough);
-        if (cur != head->last) break;
+        if (cur == head->last) break;
         cur = cur->next;
     }
 }
