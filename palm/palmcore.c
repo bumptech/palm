@@ -69,16 +69,17 @@ static int pbf_ensure_space(pbf_protobuf *pbf, int max) {
 }
 
 int pbf_exists(pbf_protobuf *pbf, uint64_t field_num) {
-    if (field_num < 0 || field_num > pbf->max_mark) 
+    if (field_num < 0 || field_num > pbf->max_mark)
         return 0;
     return pbf->marks[field_num].exists;
 }
 
 void pbf_remove(pbf_protobuf *pbf, uint64_t field_num) {
-    if (field_num < 0 || field_num > pbf->max_mark) 
+    if (field_num < 0 || field_num > pbf->max_mark)
         return;
 
     pbf->marks[field_num].exists = 0;
+    pbf->marks[field_num].last = &(pbf->marks[field_num]);
 }
 
 static void pbf_add_slab(pbf_mark *head) {
@@ -126,6 +127,10 @@ static inline pbf_mark * pbf_get_mark_for_write(pbf_protobuf *pbf,
 
     *rhead = head;
 
+    head->last = cur;
+    if (cur->next)
+        cur->next->exists = 0;
+
     return cur;
 }
 
@@ -151,7 +156,6 @@ static void pbf_scan (pbf_protobuf *pbf) {
 
         cur->raw = start;
         cur->buf_len = 0;
-        head->last = cur;
 
 
         switch (field_type) {
@@ -187,18 +191,22 @@ unsigned char *pbf_serialize(pbf_protobuf *pbf, int *length) {
     register int x;
 
     uint32_t size = 0;
-    pbf_mark *mark;
+    pbf_mark *mark, *head;
     /* XXX protect against giant allocations? */
 
     /* maximum size needed? */
     uint32_t *fields = malloc(pbf->max_mark * sizeof(uint32_t));
     uint32_t *cf = fields;
     for(x=1; x <= pbf->max_mark; x++) {
-        mark = &pbf->marks[x];
+        head = mark = &pbf->marks[x];
         if (mark->exists) {
-            size += mark->raw_len + mark->buf_len;
             *cf = x;
             cf++;
+            while (1) {
+                size += mark->raw_len + mark->buf_len;
+                if (mark == head->last) break;
+                mark = mark->next;
+            }
         }
     }
     *cf = 0;
@@ -208,15 +216,19 @@ unsigned char *pbf_serialize(pbf_protobuf *pbf, int *length) {
     unsigned char *ptr = out;
 
     for(cf=fields; *cf != 0; cf++) {
-        mark = &pbf->marks[*cf];
+        head = mark = &pbf->marks[*cf];
         if (mark->exists) {
-            if (mark->buf_len) {
-                memcpy(ptr, mark->buf, mark->buf_len);
-                ptr += mark->buf_len;
-            }
-            if (mark->raw_len) {
-                memcpy(ptr, mark->raw, mark->raw_len);
-                ptr += mark->raw_len;
+            while (1) {
+                if (mark->buf_len) {
+                    memcpy(ptr, mark->buf, mark->buf_len);
+                    ptr += mark->buf_len;
+                }
+                if (mark->raw_len) {
+                    memcpy(ptr, mark->raw, mark->raw_len);
+                    ptr += mark->raw_len;
+                }
+                if (mark == head->last) break;
+                mark = mark->next;
             }
         }
     }
@@ -434,15 +446,11 @@ int pbf_get_signed_integer_stream(pbf_protobuf *pbf,
 int pbf_set_bytes(pbf_protobuf *pbf, uint64_t field_num,
         char *out, uint64_t length) {
     int resized;
-    if (field_num >= pbf->num_marks) {
-        resized = pbf_ensure_space(pbf, field_num);
-        assert(resized);
-    }
-    if (field_num > pbf->max_mark)
-        pbf->max_mark = field_num;
-    pbf_mark *cur = &pbf->marks[field_num];
-
-    cur->exists = 1;
+    pbf_mark *head;
+    pbf_mark *cur = pbf_get_mark_for_write(
+            pbf, field_num, pbf_type_length, &head);
+    if (!cur) return 0;
+    (void)head;
 
     cur->fdata.s.data = cur->raw = out;
     cur->fdata.s.len = cur->raw_len = length;
@@ -450,23 +458,20 @@ int pbf_set_bytes(pbf_protobuf *pbf, uint64_t field_num,
     write_varint_value(&ptr, field_num << 3 | pbf_type_length);
     write_varint_value(&ptr, length);
     cur->buf_len = ptr - cur->buf;
-    cur->last = cur; // we're ignoring slabs at this point
 
     return 1;
 }
 
 int pbf_set_integer(pbf_protobuf *pbf, uint64_t field_num,
         uint64_t value, int fixed) {
-    int resized;
-    if (field_num >= pbf->num_marks) {
-        resized = pbf_ensure_space(pbf, field_num);
-        assert(resized);
-    }
-    if (field_num > pbf->max_mark)
-        pbf->max_mark = field_num;
-    pbf_mark *cur = &pbf->marks[field_num];
+    pbf_mark *head;
+    pbf_mark *cur = pbf_get_mark_for_write(
+            pbf, field_num, 
+            fixed == 0 ? pbf_type_varint :
+            fixed == 32 ? pbf_type_fixed32 : 
+            pbf_type_fixed64, &head);
+    if (!cur) return 0;
 
-    cur->exists = 1;
     cur->raw_len = 0;
     cur->fdata.i64 = value;
 
@@ -489,23 +494,18 @@ int pbf_set_integer(pbf_protobuf *pbf, uint64_t field_num,
         assert(0); // bad internal API call
 
     cur->buf_len = ptr - cur->buf;
-    cur->last = cur;
 
     return 1;
 }
 
+/* XXX proper sfixed32 support? */
 int pbf_set_signed_integer(pbf_protobuf *pbf, uint64_t field_num,
         int64_t value, int zigzag) {
-    int resized;
-    if (field_num >= pbf->num_marks) {
-        resized = pbf_ensure_space(pbf, field_num);
-        assert(resized);
-    }
-    if (field_num > pbf->max_mark)
-        pbf->max_mark = field_num;
-    pbf_mark *cur = &pbf->marks[field_num];
+    pbf_mark *head;
+    pbf_mark *cur = pbf_get_mark_for_write(
+            pbf, field_num, pbf_type_varint, &head);
+    if (!cur) return 0;
 
-    cur->exists = 1;
     cur->raw_len = 0;
 
     unsigned char *ptr = cur->buf;

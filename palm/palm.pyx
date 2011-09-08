@@ -62,6 +62,14 @@ cdef void signed_signed64_cb(int64_t i64, int32_t i32, void * ar):
 cdef void unsigned_get(uint64_t u64, void * ar):
     (<object>ar).append(u64)
 
+cdef void unsigned_float_get(uint64_t u64, void * ar):
+    cdef float fl = (<float*>&u64)[0]
+    (<object>ar).append(fl)
+
+cdef void unsigned_double_get(uint64_t u64, void * ar):
+    cdef double db = (<double*>&u64)[0]
+    (<object>ar).append(db)
+
 cdef class ProtoBase:
     (TYPE_string,
      TYPE_bytes,
@@ -142,7 +150,8 @@ cdef class ProtoBase:
         elif ctyp == self.CTYPE_bytes:
             pbf_get_bytes_stream(self.buf, field, 
                     byte_byte_cb, <void *>l)
-        elif ctyp == self.CTYPE_int32:
+        elif ctyp == self.CTYPE_int32 or \
+             ctyp == self.CTYPE_sfixed32:
             pbf_get_signed_integer_stream(self.buf,
                     field, 1, 0, signed_signed32_cb,
                     <void *>l)
@@ -150,10 +159,14 @@ cdef class ProtoBase:
             pbf_get_signed_integer_stream(self.buf,
                     field, 1, 1, signed_signed32_cb,
                     <void *>l)
-        elif ctyp == self.CTYPE_uint32 or ctyp == self.CTYPE_uint64:
+        elif ctyp == self.CTYPE_uint32 or \
+             ctyp == self.CTYPE_uint64 or \
+             ctyp == self.CTYPE_fixed32 or \
+             ctyp == self.CTYPE_fixed64:
             pbf_get_integer_stream(self.buf, field, 
                     unsigned_get, <void *>l)
-        elif ctyp == self.CTYPE_int64:
+        elif ctyp == self.CTYPE_int64 or \
+             ctyp == self.CTYPE_fixed64:
             pbf_get_signed_integer_stream(self.buf,
                     field, 0, 0, signed_signed64_cb,
                     <void *>l)
@@ -161,6 +174,13 @@ cdef class ProtoBase:
             pbf_get_signed_integer_stream(self.buf,
                     field, 0, 1, signed_signed64_cb,
                     <void *>l)
+        elif ctyp == self.CTYPE_double:
+            pbf_get_integer_stream(self.buf, field, 
+                    unsigned_double_get, <void *>l)
+        elif ctyp == self.CTYPE_float:
+            pbf_get_integer_stream(self.buf, field, 
+                    unsigned_float_get, <void *>l)
+
 
         # Implied: l may be empty if there were no values
         t = typ(l)
@@ -259,62 +279,69 @@ cdef class ProtoBase:
     def dumps(self):
         if not self._evermod:
             return self._data
-        self._save(self._mods, self._cache)
-        self.mods = {}
+        self._save()
+        self._mods = {}
         return self._serialize()
 
-    def _save(self, mods, cache):
-        cdef int ctyp
+    cdef _save_item(self, f, ctyp, v):
         cdef int64_t sq
         cdef double db
         cdef float fl
 
-        for f, v in cache.iteritems():
-            if f in mods:
-                typ = mods[f]
+        if ctyp == self.CTYPE_string:
+            if type(v) is unicode:
+                v = v.encode("utf-8")
+            l = len(v)
+            pbf_set_bytes(self.buf,
+                f, v, l)
+        elif ctyp == self.CTYPE_bytes:
+            l = len(v)
+            pbf_set_bytes(self.buf,
+                f, v, l)
+        elif ctyp == self.CTYPE_uint32 or ctyp == self.CTYPE_uint64:
+            pbf_set_signed_integer(self.buf, f, v, 0)
+        elif ctyp == self.CTYPE_int32 or ctyp == self.CTYPE_int64:
+            pbf_set_signed_integer(self.buf, f, v, 0)
+        elif ctyp == self.CTYPE_sint32 or ctyp == self.CTYPE_sint64:
+            pbf_set_signed_integer(self.buf, f, v, 1)
+        elif ctyp == self.CTYPE_fixed64:
+            pbf_set_integer(self.buf, f, v, 64)
+        elif ctyp == self.CTYPE_fixed32:
+            pbf_set_integer(self.buf, f, v, 32)
+        elif ctyp == self.CTYPE_sfixed64:
+            sq = v
+            pbf_set_integer(self.buf, f, (<uint64_t*>&sq)[0], 64)
+        elif ctyp == self.CTYPE_sfixed32:
+            sq = v
+            pbf_set_integer(self.buf, f, (<uint64_t*>&sq)[0], 32)
+        elif ctyp == self.CTYPE_double:
+            db = v
+            pbf_set_integer(self.buf, f, (<uint64_t*>&db)[0], 64)
+        elif ctyp == self.CTYPE_float:
+            fl = v
+            pbf_set_integer(self.buf, f, (<uint32_t*>&fl)[0], 64)
+        else:
+            assert 0, "unimplemented"
+
+    def _save(self):
+        cdef int ctyp
+
+        for f, v in self._cache.iteritems():
+            if f in self._mods:
+                pbf_remove(self.buf, f)
+                typ = self._mods[f]
                 if isinstance(v, ProtoBase):
                     o = v.dumps()
                     l = len(o)
                     pbf_set_bytes(self.buf,
                         f, o, l)
                 elif isinstance(v, RepeatedSequence):
-                    raise NotImplementedError("dumps repeated") # XXX save list!
+                    ctyp = v.pb_subtype
+                    for i in v:
+                        self._save_item(f, ctyp, i)
                 else:
                     ctyp = typ
-                    if ctyp == self.CTYPE_string:
-                        if type(v) is unicode:
-                            v = v.encode("utf-8")
-                        l = len(v)
-                        pbf_set_bytes(self.buf,
-                            f, v, l)
-                    elif ctyp == self.CTYPE_bytes:
-                        l = len(v)
-                        pbf_set_bytes(self.buf,
-                            f, v, l)
-                    elif ctyp == self.CTYPE_uint32 or ctyp == self.CTYPE_uint64:
-                        pbf_set_signed_integer(self.buf, f, v, 0)
-                    elif ctyp == self.CTYPE_int32 or ctyp == self.CTYPE_int64:
-                        pbf_set_signed_integer(self.buf, f, v, 0)
-                    elif ctyp == self.CTYPE_sint32 or ctyp == self.CTYPE_sint64:
-                        pbf_set_signed_integer(self.buf, f, v, 1)
-                    elif ctyp == self.CTYPE_fixed64:
-                        pbf_set_integer(self.buf, f, v, 64)
-                    elif ctyp == self.CTYPE_fixed32:
-                        pbf_set_integer(self.buf, f, v, 32)
-                    elif ctyp == self.CTYPE_sfixed64:
-                        sq = v
-                        pbf_set_integer(self.buf, f, (<uint64_t*>&sq)[0], 64)
-                    elif ctyp == self.CTYPE_sfixed32:
-                        sq = v
-                        pbf_set_integer(self.buf, f, (<uint64_t*>&sq)[0], 32)
-                    elif ctyp == self.CTYPE_double:
-                        db = v
-                        pbf_set_integer(self.buf, f, (<uint64_t*>&db)[0], 64)
-                    elif ctyp == self.CTYPE_float:
-                        fl = v
-                        pbf_set_integer(self.buf, f, (<uint32_t*>&fl)[0], 64)
-                    else:
-                        assert 0, "unimplemented"
+                    self._save_item(f, ctyp, v)
 
     def _serialize(self):
         cdef unsigned char *cout
