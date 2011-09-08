@@ -1,5 +1,5 @@
  [x] Nested Messages
- [ ] Repeated
+ [ ] Repeated (write support, and finish read support for new wmoss types)
  [ ] Parent Chains
  [ ] Nice __str__
  [ ] Enum/Bool
