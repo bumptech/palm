@@ -1,6 +1,6 @@
  [x] Nested Messages
  [ ] Repeated (write support, and finish read support for new wmoss types)
- [ ] Parent Chains
+ [ ] Parent Chains (test parent chains)
  [ ] Nice __str__
  [ ] Enum/Bool
  [ ] Limit field numbers >= 1 and < 100k at higher levels (esp on set side)
