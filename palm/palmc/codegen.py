@@ -59,8 +59,7 @@ class %s(ProtoBase):
     for num, field in fields.iteritems():
         write_field(num, field)
 
-def write_field_get(num, field):
-    _, type, name, default = field
+def write_field_get(num, type, name, default):
     if default is not None:
         r = '''
             try:
@@ -132,7 +131,7 @@ def write_field(num, field):
     def %s__exists(self):
         return %s in self._mods or self._buf_exists(%s)
 
-''' % (name, num, num, write_field_get(num, field), num,
+''' % (name, num, num, write_field_get(num, type, name, default), num,
     name, name, name, name,
     name, name, num, num, type,
     name, num, type,
