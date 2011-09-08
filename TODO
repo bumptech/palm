@@ -1,8 +1,8 @@
  [x] Nested Messages
  [ ] Repeated
- [ ] Fixed fields
+ [x] Fixed fields
  [ ] More .proto syntax: defaults, comments
- [ ] Double/float
+ [x] Double/float
  [ ] Enum/Bool
  [ ] Heavy tests against google's official lib
  [ ] Clean up setup, palmc script, organize project, etc.
