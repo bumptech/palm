@@ -46,7 +46,8 @@ cdef class ProtoBase:
      TYPE_double,
      TYPE_fixed32,
      TYPE_sfixed32,
-     ) = range(13)
+     TYPE_float,
+     ) = range(14)
     cdef pbf_protobuf *buf
 
     cdef int CTYPE_string
@@ -62,6 +63,7 @@ cdef class ProtoBase:
     cdef int CTYPE_double
     cdef int CTYPE_fixed32
     cdef int CTYPE_sfixed32
+    cdef int CTYPE_float
 
     def __init__(self, data):
         self._data = data
@@ -82,6 +84,7 @@ cdef class ProtoBase:
         self.CTYPE_double = self.TYPE_double
         self.CTYPE_fixed32 = self.TYPE_fixed32
         self.CTYPE_sfixed32 = self.TYPE_sfixed32
+        self.CTYPE_float = self.TYPE_float
 
     def _get_submessage(self, field, typ, name):
         cdef char *res
@@ -107,6 +110,7 @@ cdef class ProtoBase:
         cdef int64_t sq
         cdef uint64_t uq
         cdef double db
+        cdef float fl
 
         cdef int got
         if ctyp == self.CTYPE_string:
@@ -147,6 +151,13 @@ cdef class ProtoBase:
             if not got:
                 raise ProtoFieldMissing(name)
             return db
+        elif ctyp == self.CTYPE_float:
+            got = pbf_get_integer(self.buf,
+                    field, &uq)
+            if not got:
+                raise ProtoFieldMissing(name)
+            fl = (<float*>&uq)[0]
+            return fl
         elif ctyp == self.CTYPE_int64 or \
              ctyp == self.CTYPE_sfixed64:
             got = pbf_get_signed_integer(self.buf,
@@ -179,6 +190,7 @@ cdef class ProtoBase:
         cdef int ctyp
         cdef int64_t sq
         cdef double db
+        cdef float fl
 
         for f, v in cache.iteritems():
             if f in mods:
@@ -219,6 +231,9 @@ cdef class ProtoBase:
                     elif ctyp == self.CTYPE_double:
                         db = v
                         pbf_set_integer(self.buf, f, (<uint64_t*>&db)[0], 64)
+                    elif ctyp == self.CTYPE_float:
+                        fl = v
+                        pbf_set_integer(self.buf, f, (<uint32_t*>&fl)[0], 64)
                     else:
                         assert 0, "unimplemented"
 

@@ -22,6 +22,8 @@ message Test {
     optional fixed32 l = 13;
     optional sfixed32 m = 14;
     optional sfixed32 n = 15;
+
+    optional float o = 16;
 }
 
 

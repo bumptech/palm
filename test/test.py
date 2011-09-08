@@ -29,11 +29,13 @@ class TestProto(object):
             h=2**63-1,
             i=-2**63,
 
-            k=10.4,
+            k=float(10**200),
 
             l=2**32-1,
             m=2**31-1,
             n=-2**31,
+
+            o=float(253),
             )
 
     def test_fields(self):
@@ -73,3 +75,6 @@ class TestProto(object):
 
     def test_fixed32(self):
         self.fields_test('l', 'm', 'n')
+
+    def test_float(self):
+        self.fields_test('o')
