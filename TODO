@@ -1,9 +1,11 @@
  [x] Nested Messages
  [x] Repeated
+ [ ] Repeated convenience methods (.add for pb, etc)
  [ ] Parent Chains (test parent chains, copy(), etc)
  [x] Nice __str__
  [ ] Enum/Bool
  [ ] Limit field numbers >= 1 and < 100k at higher levels (esp on set side)
+ [ ] Better type validation
 
  [x] Fixed fields
  [x] Double/float
