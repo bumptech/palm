@@ -78,3 +78,18 @@ class TestProto(object):
 
     def test_float(self):
         self.fields_test('o')
+
+    def test_default(self):
+        pb = self.get_proto()
+        new = test_pb.Test(pb.SerializeToString())
+
+        assert new.p == 13
+        assert new.q == 23.4
+        assert new.r == "cats"
+
+        assert new.dumps() == pb.SerializeToString()
+
+        new.p = 29
+        renew = test_pb.Test(new.dumps())
+
+        assert renew.p == 29

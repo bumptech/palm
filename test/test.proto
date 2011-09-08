@@ -24,8 +24,11 @@ message Test {
     optional sfixed32 n = 15;
 
     optional float o = 16;
-}
 
+    optional uint32 p = 17 [default = 13];
+    optional float q = 18 [default = 23.4];
+    optional string r = 19 [default = "cats"];
+}
 
 message Mess2 {
     required string foo=1;
