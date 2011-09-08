@@ -1,5 +1,5 @@
  [x] Nested Messages
- [ ] Repeated (write support, and finish read support for new wmoss types)
+ [x] Repeated
  [ ] Parent Chains (test parent chains, copy(), etc)
  [x] Nice __str__
  [ ] Enum/Bool
@@ -10,5 +10,12 @@
  [x] Defaults
  [ ] Comments
 
- [ ] Heavy tests against google's official lib
+ [.] Heavy tests against google's official lib
  [ ] Clean up setup, palmc script, organize project, etc.
+
+
+Bugs
+----
+
+ * Not really honoring sfixed32 -- we write out as varint instead of min size 32
+   (should probably use unsigned write as passthrough?)
