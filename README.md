@@ -29,8 +29,8 @@ Status
 It is currently pre-alpha quality.  Don't use it for anything serious yet!
 Pull requests welcome!  See the TODO.
 
-Author
-------
+Authors
+-------
 
- Jamie Turner <jamie@bu.mp>  @jamwt
- Will Moss <wmoss@bu.mp> @wbmoss
+    Jamie Turner <jamie@bu.mp>  @jamwt
+    Will Moss <wmoss@bu.mp> @wbmoss
