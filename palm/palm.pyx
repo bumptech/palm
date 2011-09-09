@@ -418,3 +418,8 @@ cdef class RepeatedSequence(list):
         '''
         l = list(self)
         return RepeatedSequence(l)
+
+    def add(self):
+        i = self.pb_subtype()
+        self.append(i)
+        return i
