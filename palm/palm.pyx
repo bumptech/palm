@@ -45,6 +45,7 @@ cdef extern from "palmcore.h":
 
 class ProtoFieldMissing(Exception): pass
 class ProtoDataError(Exception): pass
+class ProtoValueError(Exception): pass
 
 cdef void byte_string_cb(char *s, uint64_t l, void *ar):
     py_s = unicode(s[:l], "utf-8")
