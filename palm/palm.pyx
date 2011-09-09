@@ -300,40 +300,45 @@ cdef class ProtoBase:
         cdef double db
         cdef float fl
 
-        if ctyp == self.CTYPE_string:
-            if type(v) is unicode:
-                v = v.encode("utf-8")
-            l = len(v)
-            pbf_set_bytes(self.buf,
-                f, v, l)
-        elif ctyp == self.CTYPE_bytes:
-            l = len(v)
-            pbf_set_bytes(self.buf,
-                f, v, l)
-        elif ctyp == self.CTYPE_uint32 or ctyp == self.CTYPE_uint64:
-            pbf_set_integer(self.buf, f, v, 0)
-        elif ctyp == self.CTYPE_int32 or ctyp == self.CTYPE_int64:
-            pbf_set_signed_integer(self.buf, f, v, 0)
-        elif ctyp == self.CTYPE_sint32 or ctyp == self.CTYPE_sint64:
-            pbf_set_signed_integer(self.buf, f, v, 1)
-        elif ctyp == self.CTYPE_fixed64:
-            pbf_set_integer(self.buf, f, v, 64)
-        elif ctyp == self.CTYPE_fixed32:
-            pbf_set_integer(self.buf, f, v, 32)
-        elif ctyp == self.CTYPE_sfixed64:
-            sq = v
-            pbf_set_integer(self.buf, f, (<uint64_t*>&sq)[0], 64)
-        elif ctyp == self.CTYPE_sfixed32:
-            sq = v
-            pbf_set_integer(self.buf, f, (<uint64_t*>&sq)[0], 32)
-        elif ctyp == self.CTYPE_double:
-            db = v
-            pbf_set_integer(self.buf, f, (<uint64_t*>&db)[0], 64)
-        elif ctyp == self.CTYPE_float:
-            fl = v
-            pbf_set_integer(self.buf, f, (<uint32_t*>&fl)[0], 32)
-        else:
-            assert 0, "unimplemented"
+        try:
+            if ctyp == self.CTYPE_string:
+                if type(v) is unicode:
+                    v = v.encode("utf-8")
+                l = len(v)
+                pbf_set_bytes(self.buf,
+                    f, v, l)
+            elif ctyp == self.CTYPE_bytes:
+                l = len(v)
+                pbf_set_bytes(self.buf,
+                    f, v, l)
+            elif ctyp == self.CTYPE_uint32 or ctyp == self.CTYPE_uint64:
+                pbf_set_integer(self.buf, f, v, 0)
+            elif ctyp == self.CTYPE_int32 or ctyp == self.CTYPE_int64:
+                pbf_set_signed_integer(self.buf, f, v, 0)
+            elif ctyp == self.CTYPE_sint32 or ctyp == self.CTYPE_sint64:
+                pbf_set_signed_integer(self.buf, f, v, 1)
+            elif ctyp == self.CTYPE_fixed64:
+                pbf_set_integer(self.buf, f, v, 64)
+            elif ctyp == self.CTYPE_fixed32:
+                pbf_set_integer(self.buf, f, v, 32)
+            elif ctyp == self.CTYPE_sfixed64:
+                sq = v
+                pbf_set_integer(self.buf, f, (<uint64_t*>&sq)[0], 64)
+            elif ctyp == self.CTYPE_sfixed32:
+                sq = v
+                pbf_set_integer(self.buf, f, (<uint64_t*>&sq)[0], 32)
+            elif ctyp == self.CTYPE_double:
+                db = v
+                pbf_set_integer(self.buf, f, (<uint64_t*>&db)[0], 64)
+            elif ctyp == self.CTYPE_float:
+                fl = v
+                pbf_set_integer(self.buf, f, (<uint32_t*>&fl)[0], 32)
+            else:
+                assert 0, "unimplemented"
+        except Exception, e:
+            raise ProtoValueError("Value exception while saving %s.%s: %s" %
+                    (self.__class__.__name__,
+                        getattr(self, '_pb_field_name_%d' % f), str(e)))
 
     def _save(self):
         cdef int ctyp

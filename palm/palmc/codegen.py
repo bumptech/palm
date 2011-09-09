@@ -128,6 +128,8 @@ def write_field(cname, num, field):
             del self._mods[%s]
         self._buf_del(%s)
 
+    _pb_field_name_%d = "%s"
+
     %s = property(_get_%s, _set_%s, _del_%s)
 
     @property
@@ -139,5 +141,6 @@ def write_field(cname, num, field):
     name, name, num, num, type,
     name, num, type,
     name, num, num, num, num, num,
+    num, name,
     name, name, name, name,
     name, num, num))
