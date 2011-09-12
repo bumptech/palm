@@ -1,3 +1,5 @@
+import "foo.proto";
+
 //Test Comment 0
 message Test { //Test Comment 1
     message Foo {

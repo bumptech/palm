@@ -2,9 +2,10 @@ from simpleparse.parser import Parser
 from simpleparse.dispatchprocessor import DispatchProcessor, dispatch, dispatchList
 
 protofile = r'''
-root                    := whitespace*, message+
+root                    := whitespace*, message_or_import+
 <whitespace>            := comment / [ \t\n]
 comment                 := "//", -"\n"*
+>message_or_import<     := message / import
 message                 := message_start, message_label!, whitespace*, message_body, whitespace*
 <message_start>         := "message", whitespace+
 message_label           := [a-zA-Z], [a-z0-9A-Z_]*
@@ -29,6 +30,8 @@ enum_name               := [a-zA-Z], [a-z0-9A-Z_]*
 enum_value              := enum_label, whitespace*, "=", whitespace*, enum_code, whitespace*, ";", whitespace*
 enum_label              := [a-zA-Z], [a-z0-9A-Z_]*
 enum_code               := [0-9]+
+>import<                  := "import", whitespace+!, '"'!, import_path, '"'!, whitespace*, ";"!, whitespace*
+import_path             := -'"'*
 '''
 
 class ProtoParseError(Exception):
@@ -43,6 +46,7 @@ class ProtoProcessor(DispatchProcessor):
         self.enums = {}
         self.enum_sets = {}
         self.message_stack = []
+        self.imports = set()
 
     def message(self, (tag, start, stop, subtags), buffer):
         if self.current_message:
@@ -118,6 +122,11 @@ class ProtoProcessor(DispatchProcessor):
     def enum_code(self, (tag, start, stop, subtags), buffer):
         return int(buffer[start:stop])
 
+    def import_path(self, (tag, start, stop, subtags), buffer):
+        path = buffer[start:stop]
+        return path
+        self.imports.add(path)
+
 class ProtoParser(Parser):
     def buildProcessor(self):
         return ProtoProcessor()
@@ -129,5 +138,6 @@ r = parser.parse(stdin.read())
 
 from codegen import gen_module
 
-s = gen_module(r[1])
+res = r[1]
+s = gen_module([m for m in res if type(m) is tuple], [m for m in res if type(m) is str])
 print s

@@ -4,12 +4,12 @@ import operator as op
 
 root = dirname(abspath(__file__))
 system('protoc --python_out=%s -I%s %s/test.proto' % (root, root, root))
-system('cat %s/test.proto | python %s/../palm/palmc/parse.py > %s/test_pb.py' % (root, root, root))
+system('cat %s/test.proto | python %s/../palm/palmc/parse.py > %s/test_palm.py' % (root, root, root))
 
 
 import py.test
 
-import test_pb
+import test_palm
 import test_pb2
 
 def approx_list_match(l1, l2):
@@ -87,20 +87,20 @@ class TestProto(object):
     def test_fields(self):
         pb = self.get_proto()
         raw = pb.SerializeToString()
-        new = test_pb.Test(raw)
+        new = test_palm.Test(raw)
 
         assert sorted(new.fields()) == sorted(pb.DESCRIPTOR.fields_by_name.keys())
 
     def fields_test(self, *fields, **kw):
         cmp = kw.pop('cmp', op.eq)
         pb = self.get_proto()
-        new = test_pb.Test(pb.SerializeToString())
+        new = test_palm.Test(pb.SerializeToString())
 
         for f in fields:
             assert cmp(getattr(pb, f), getattr(new, f))
             getattr(new, '_mod_%s' % f)()
 
-        renew = test_pb.Test(new.dumps())
+        renew = test_palm.Test(new.dumps())
 
         for f in fields:
             assert cmp(getattr(pb, f), getattr(renew, f))
@@ -179,21 +179,21 @@ class TestProto(object):
 
     def test_enum(self):
         m = self.get_proto()
-        o = test_pb.Test(m.SerializeToString())
-        o.cls = test_pb.Test.AirplaneClass.BUSINESS
-        n = test_pb.Test(o.dumps())
+        o = test_palm.Test(m.SerializeToString())
+        o.cls = test_palm.Test.AirplaneClass.BUSINESS
+        n = test_palm.Test(o.dumps())
         assert n.cls == o.cls
 
     def test_enum_repeated(self):
         m = self.get_proto()
-        o = test_pb.Test(m.SerializeToString())
+        o = test_palm.Test(m.SerializeToString())
         o.r_cls.extend([o.AirplaneClass.FIRST, o.AirplaneClass.BUSINESS])
-        n = test_pb.Test(o.dumps())
+        n = test_palm.Test(o.dumps())
         assert n.r_cls == o.r_cls
 
     def test_default(self):
         pb = self.get_proto()
-        new = test_pb.Test(pb.SerializeToString())
+        new = test_palm.Test(pb.SerializeToString())
 
         assert new.p == 13
         assert new.q == 23.4
@@ -202,6 +202,6 @@ class TestProto(object):
         assert new.dumps() == pb.SerializeToString()
 
         new.p = 29
-        renew = test_pb.Test(new.dumps())
+        renew = test_palm.Test(new.dumps())
 
         assert renew.p == 29

@@ -1,13 +1,22 @@
 import sys
+import os
 from palm import ProtoBase
 pfx = ''
 o = []
-def gen_module(messages):
+def convert_proto_name(n):
+    n = os.path.basename(n)
+    p, last = n.rsplit(".", 1)
+    assert last == "proto"
+    return "%s_palm" % p
+
+def gen_module(messages, imports):
     global pfx
     global o
     pfx = ''
 
     out('from palm import ProtoBase, RepeatedSequence, ProtoEnumeration\n\n')
+    for i in imports:
+        out('from %s import *\n' % convert_proto_name(i))
     for (n, fields, subs, en) in messages:
         write_class(n, fields, subs, en)
 
