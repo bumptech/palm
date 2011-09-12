@@ -13,16 +13,16 @@
  [x] Comments
  [x] Imports
  [ ] Enforce required
+ [x] Clean up setup, palmc script, organize project, etc.
  [ ] Parent Chains (test parent chains, copy(), etc)
 
  [.] Heavy tests against google's official lib
- [ ] Clean up setup, palmc script, organize project, etc.
 
 
-Bugs
-----
+Bugs/Incompletes
+----------------
 
  * Not really honoring sfixed32 -- we write out as varint instead of min size 32
    (should probably use unsigned write as passthrough?)
- * Default without value
+ * Default without value not supported (type-implied default values)
  * Enum is not terribly crazy about enforcing the value is within range
