@@ -6,5 +6,5 @@ sourcefiles = ["palm/palm.pyx", "palm/palmcore.c"]
 
 setup(
         cmdclass = {'build_ext' : build_ext},
-        ext_modules = [Extension("palm", sourcefiles)]
+        ext_modules = [Extension("palm", sourcefiles, extra_compile_args=['-g'])]
         )
