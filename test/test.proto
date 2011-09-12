@@ -30,6 +30,8 @@ message Test { //Test Comment 1
 
     optional Foo msg = 17;
 
+    optional bool yn = 18;
+
     optional uint32 p = 21 [default = 13];
     optional float q = 22 [default = 23.4];
     optional string r = 23 [default = "cats"];
@@ -57,5 +59,7 @@ message Test { //Test Comment 1
     repeated float r_o = 46;
 
     repeated Foo r_msg = 47;
+
+    repeated bool r_yn = 48;
     
 }

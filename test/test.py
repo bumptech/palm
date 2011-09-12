@@ -51,6 +51,8 @@ class TestProto(object):
             n=-2**31,
 
             o=float(253),
+            yn = True,
+            msg = test_pb2.Test.Foo(baz="blah"),
             )
 
         pb.r_sha1.extend(["three", "blind", "mice"])
@@ -77,6 +79,8 @@ class TestProto(object):
         f2 = pb.r_msg.add()
         f1.baz = "woot"
         f2.baz = "yelp"
+
+        pb.r_yn.extend([True, False, True])
 
         return pb
 
@@ -122,6 +126,12 @@ class TestProto(object):
     def test_float(self):
         self.fields_test('o')
 
+    def test_message(self):
+        self.fields_test('msg', cmp=foo_match)
+
+    def test_bool(self):
+        self.fields_test('yn')
+
     def test_repeated_string(self):
         self.fields_test("r_sha1")
 
@@ -163,6 +173,9 @@ class TestProto(object):
 
     def test_repeated_msg(self):
         self.fields_test("r_msg", cmp=list_foo_match)
+
+    def test_repeated_bool(self):
+        self.fields_test("r_yn")
 
     def test_default(self):
         pb = self.get_proto()

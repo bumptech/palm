@@ -59,7 +59,7 @@ cdef void signed_signed32_cb(int64_t i64, int32_t i32, void *ar):
 
 cdef void signed_signed64_cb(int64_t i64, int32_t i32, void * ar):
     (<object>ar).append(i64)
-    
+
 cdef void unsigned_get(uint64_t u64, void * ar):
     (<object>ar).append(u64)
 
@@ -70,6 +70,10 @@ cdef void unsigned_float_get(uint64_t u64, void * ar):
 cdef void unsigned_double_get(uint64_t u64, void * ar):
     cdef double db = (<double*>&u64)[0]
     (<object>ar).append(db)
+
+cdef void unsigned_bool_get(uint64_t u64, void * ar):
+    b = bool(u64)
+    (<object>ar).append(b)
 
 cdef class ProtoBase:
     (TYPE_string,
@@ -86,7 +90,8 @@ cdef class ProtoBase:
      TYPE_fixed32,
      TYPE_sfixed32,
      TYPE_float,
-     ) = range(14)
+     TYPE_bool,
+     ) = range(15)
 
     cdef pbf_protobuf *buf
 
@@ -104,6 +109,7 @@ cdef class ProtoBase:
     cdef int CTYPE_fixed32
     cdef int CTYPE_sfixed32
     cdef int CTYPE_float
+    cdef int CTYPE_bool
 
     def __init__(self, data):
         self._pb_init(data)
@@ -121,6 +127,7 @@ cdef class ProtoBase:
         self.CTYPE_fixed32 = self.TYPE_fixed32
         self.CTYPE_sfixed32 = self.TYPE_sfixed32
         self.CTYPE_float = self.TYPE_float
+        self.CTYPE_bool = self.TYPE_bool
 
     def _pb_init(self, data):
         self._data = data # retains!
@@ -196,6 +203,9 @@ cdef class ProtoBase:
             elif ctyp == self.CTYPE_float:
                 pbf_get_integer_stream(self.buf, field, 
                         unsigned_float_get, <void *>l)
+            elif ctyp == self.CTYPE_bool:
+                pbf_get_integer_stream(self.buf, field,
+                        unsigned_bool_get, <void *>l)
             else:
                 assert 0, ("unknown type %s" % typ.pb_subtype)
 
@@ -266,6 +276,12 @@ cdef class ProtoBase:
                 raise ProtoFieldMissing(name)
             fl = (<float*>&uq)[0]
             return fl
+        elif ctyp == self.CTYPE_bool:
+            got = pbf_get_integer(self.buf,
+                    field, &uq)
+            if not got:
+                raise ProtoFieldMissing(name)
+            return bool(uq)
         elif ctyp == self.CTYPE_int64 or \
              ctyp == self.CTYPE_sfixed64:
             got = pbf_get_signed_integer(self.buf,
@@ -341,6 +357,9 @@ cdef class ProtoBase:
             elif ctyp == self.CTYPE_float:
                 fl = v
                 pbf_set_integer(self.buf, f, (<uint32_t*>&fl)[0], 32)
+            elif ctyp == self.CTYPE_bool:
+                bi = int(v)
+                pbf_set_integer(self.buf, f, bi, 0)
             else:
                 assert 0, "unimplemented"
         except Exception, e:
