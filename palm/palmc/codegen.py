@@ -7,9 +7,9 @@ def gen_module(messages):
     global o
     pfx = ''
 
-    out('from palm import ProtoBase, RepeatedSequence\n\n')
-    for (n, fields, subs) in messages:
-        write_class(n, fields, subs)
+    out('from palm import ProtoBase, RepeatedSequence, ProtoEnumeration\n\n')
+    for (n, fields, subs, en) in messages:
+        write_class(n, fields, subs, en)
 
     all = ''.join(o)
 
@@ -24,7 +24,20 @@ def out(s):
 def clean(name):
     return name.split('-', 1)[1]
 
-def write_class(name, fields, subs):
+def write_enum(name, spec):
+    out(
+'''
+class %s(ProtoEnumeration):
+''' % name)
+    for cn, value in sorted(spec.items(), key=lambda (k, v): v):
+        out('%s = %s\n' % (cn, value))
+    out('''
+
+TYPE_%s = ProtoBase.TYPE_int32
+'''
+% name)
+
+def write_class(name, fields, subs, enums):
     global pfx
     name = clean(name)
     out(
@@ -45,9 +58,15 @@ class %s(ProtoBase):
                           if getattr(self, '%%s__exists' %% f))
 ''' % (name,
        "', '".join(name for _, _, name, _ in fields.values())))
-    for sn, (sf, ss) in subs:
+
+    for ename, espec in enums.iteritems():
         pfx += "    "
-        write_class(sn, sf, ss)
+        write_enum(ename, espec)
+        pfx = pfx[:-4]
+
+    for sn, (sf, ss), ens in subs:
+        pfx += "    "
+        write_class(sn, sf, ss, ens)
         pfx = pfx[:-4]
         snm = clean(sn)
         out(

@@ -4,6 +4,12 @@ message Test { //Test Comment 1
         optional string baz = 8;
     }
 
+    enum AirplaneClass {
+        FIRST = 0;
+        ECONOMY = 1;
+        BUSINESS = 2;
+    }
+
     optional string sha1 = 1;
 
     //Test Comment 2
@@ -31,6 +37,7 @@ message Test { //Test Comment 1
     optional Foo msg = 17;
 
     optional bool yn = 18;
+    optional AirplaneClass cls = 19;
 
     optional uint32 p = 21 [default = 13];
     optional float q = 22 [default = 23.4];
@@ -61,5 +68,6 @@ message Test { //Test Comment 1
     repeated Foo r_msg = 47;
 
     repeated bool r_yn = 48;
-    
+
+    repeated AirplaneClass r_cls = 49;
 }

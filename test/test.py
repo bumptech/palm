@@ -177,6 +177,20 @@ class TestProto(object):
     def test_repeated_bool(self):
         self.fields_test("r_yn")
 
+    def test_enum(self):
+        m = self.get_proto()
+        o = test_pb.Test(m.SerializeToString())
+        o.cls = test_pb.Test.AirplaneClass.BUSINESS
+        n = test_pb.Test(o.dumps())
+        assert n.cls == o.cls
+
+    def test_enum_repeated(self):
+        m = self.get_proto()
+        o = test_pb.Test(m.SerializeToString())
+        o.r_cls.extend([o.AirplaneClass.FIRST, o.AirplaneClass.BUSINESS])
+        n = test_pb.Test(o.dumps())
+        assert n.r_cls == o.r_cls
+
     def test_default(self):
         pb = self.get_proto()
         new = test_pb.Test(pb.SerializeToString())

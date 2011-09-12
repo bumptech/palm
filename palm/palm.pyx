@@ -451,3 +451,5 @@ cdef class RepeatedSequence(list):
         i = self.pb_subtype()
         self.append(i)
         return i
+
+cdef class ProtoEnumeration(object): pass

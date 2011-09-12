@@ -11,7 +11,7 @@ message_label           := [a-zA-Z], [a-z0-9A-Z_]*
 section                 := [a-z]+, [ \t\n]+
 message_body            := "{"!,whitespace*,field_list,whitespace*,"}"!
 >field_list<            := field_opt*
->field_opt<             := message / field
+>field_opt<             := message / enum / field
 field                   := field_require, whitespace+!, field_type!, whitespace+!, field_name!, whitespace*, "="!, whitespace*, field_num!, whitespace*, field_default?, ";"!, whitespace*
 field_require           := "repeated" / "optional" / "required"
 field_type              := [a-zA-Z], [a-z0-9A-Z_]*
@@ -23,6 +23,12 @@ field_default_value_s   := '"', -'"'*, '"'
 field_default_value_i   := [0-9]+
 field_default_value_f   := [0-9]+, field_default_value_fd+
 field_default_value_fd  := ".", [0-9]+
+enum                    := "enum", whitespace+!, enum_name, whitespace*, "{"!, whitespace*, enum_list, whitespace*, "}"!, whitespace*
+enum_name               := [a-zA-Z], [a-z0-9A-Z_]*
+>enum_list<             := enum_value*
+enum_value              := enum_label, whitespace*, "=", whitespace*, enum_code, whitespace*, ";", whitespace*
+enum_label              := [a-zA-Z], [a-z0-9A-Z_]*
+enum_code               := [0-9]+
 '''
 
 class ProtoParseError(Exception):
@@ -34,23 +40,30 @@ class ProtoProcessor(DispatchProcessor):
     def __init__(self):
         self.current_message = None
         self.messages = {}
+        self.enums = {}
+        self.enum_sets = {}
         self.message_stack = []
 
     def message(self, (tag, start, stop, subtags), buffer):
         if self.current_message:
-            self.message_stack.append(self.current_message)
+            self.message_stack.append((self.current_message, self.enums))
+            self.enums = {}
 
         if subtags:
             dispatchList(self, subtags, buffer)
         cm = self.current_message
 
         if self.message_stack:
-            self.current_message = self.message_stack.pop()
+            self.current_message, self.enums = self.message_stack.pop()
             self.messages[self.current_message][1].append(cm)
         else:
             self.current_message = None
 
-        return cm, self.messages[cm][0], [(sm, self.messages[sm]) for sm in self.messages[cm][1]]
+        en = self.enums
+        self.enum_sets[cm] = en
+        self.enums = {}
+
+        return cm, self.messages[cm][0], [(sm, self.messages[sm], self.enum_sets[sm]) for sm in self.messages[cm][1]], en
 
     def message_label(self, (tag, start, stop, subtags), buffer):
         self.current_message = str(len(self.message_stack)) + '-' +  buffer[start:stop]
@@ -86,6 +99,24 @@ class ProtoProcessor(DispatchProcessor):
         tag, start, stop, subtags = subtags[0]
         return buffer[start:stop]
 
+    def enum(self, (tag, start, stop, subtags), buffer):
+        res = dispatchList(self, subtags, buffer)
+        name = res[0]
+        rest = res[1:]
+        fields = dict(rest)
+        self.enums[name] = fields
+
+    def enum_value(self, (tag, start, stop, subtags), buffer):
+        return tuple(dispatchList(self, subtags, buffer))
+
+    def enum_name(self, (tag, start, stop, subtags), buffer):
+        return buffer[start:stop]
+
+    def enum_label(self, (tag, start, stop, subtags), buffer):
+        return buffer[start:stop]
+
+    def enum_code(self, (tag, start, stop, subtags), buffer):
+        return int(buffer[start:stop])
 
 class ProtoParser(Parser):
     def buildProcessor(self):
