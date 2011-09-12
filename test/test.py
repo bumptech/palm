@@ -1,11 +1,16 @@
-from os import system
+from subprocess import Popen, PIPE
 from os.path import dirname, abspath
 import operator as op
 
+
+def run(cmd):
+    child = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+    assert child.wait() == 0, "Command failed:\n%s" % child.stderr.read()
+
 root = dirname(abspath(__file__))
-system('protoc --python_out=%s -I%s %s/test.proto %s/foo.proto' % (root, root, root, root))
-system('cat %s/test.proto | python %s/../palm/palmc/parse.py > %s/test_palm.py' % (root, root, root))
-system('cat %s/foo.proto | python %s/../palm/palmc/parse.py > %s/foo_palm.py' % (root, root, root))
+run('protoc --python_out=%s -I%s %s/test.proto %s/foo.proto' % (root, root, root, root))
+run('cat %s/test.proto | python %s/../palm/palmc/parse.py > %s/test_palm.py' % (root, root, root))
+run('cat %s/foo.proto | python %s/../palm/palmc/parse.py > %s/foo_palm.py' % (root, root, root))
 
 
 import py.test
