@@ -52,10 +52,9 @@ def write_class(name, fields, subs, enums):
     out(
 '''
 class %s(ProtoBase):
-    def __init__(self, _pbf_buf='', _pbf_parent_callback=None): # XXX support setting
-        ProtoBase.__init__(self, _pbf_buf)
+    def __init__(self, _pbf_buf='', _pbf_parent_callback=None, **kw): 
+        ProtoBase.__init__(self, _pbf_buf, **kw)
         self._cache = {}
-        self._mods = {}
         self._pbf_parent_callback = _pbf_parent_callback
         self._pbf_establish_parent_callback = None
 
