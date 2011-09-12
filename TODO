@@ -3,7 +3,6 @@
  [x] Repeated convenience methods (.add for pb, etc)
  [x] Better type validation
  [x] Nice __str__
- [ ] Parent Chains (test parent chains, copy(), etc)
  [x] Enum
  [x] Bool
  [x] Limit field numbers >= 1 and < 100k at higher levels (esp on set side)
@@ -14,10 +13,10 @@
  [x] Comments
  [x] Imports
  [ ] Enforce required
+ [ ] Parent Chains (test parent chains, copy(), etc)
 
  [.] Heavy tests against google's official lib
  [ ] Clean up setup, palmc script, organize project, etc.
- [ ] Segfault on exception
 
 
 Bugs
