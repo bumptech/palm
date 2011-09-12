@@ -2,6 +2,8 @@ from subprocess import Popen, PIPE
 from os.path import dirname, abspath
 import operator as op
 
+from palm import ProtoRequiredFieldMissing
+
 
 def run(cmd):
     child = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
@@ -59,6 +61,10 @@ class TestProto(object):
             o=float(253),
             yn = True,
             msg = test_pb2.Test.Foo(baz="blah"),
+
+            req_a=911111,
+            req_b=-911111,
+            req_c=-911111,
             )
 
         pb.r_sha1.extend(["three", "blind", "mice"])
@@ -211,3 +217,14 @@ class TestProto(object):
         renew = test_palm.Test(new.dumps())
 
         assert renew.p == 29
+
+    def test_required(self):
+        pb = self.get_proto()
+        new = test_palm.Test(pb.SerializeToString())
+        del new.req_a
+        try:
+            new.dumps()
+        except ProtoRequiredFieldMissing:
+            pass
+        else:
+            assert False, "Missing required field not caught"

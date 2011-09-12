@@ -58,6 +58,7 @@ class %s(ProtoBase):
         self._mods = {}
         self._pbf_parent_callback = _pbf_parent_callback
         self._pbf_establish_parent_callback = None
+        self._required = [%s]
 
     def fields(self):
         return ['%s']
@@ -66,6 +67,7 @@ class %s(ProtoBase):
         return '\\n'.join('%%s: %%s' %% (f, repr(getattr(self, '_get_%%s' %% f)())) for f in self.fields()
                           if getattr(self, '%%s__exists' %% f))
 ''' % (name,
+       ", ".join(str(num) for num, (req, _, _, _) in fields.iteritems() if req == 'required'),
        "', '".join(name for _, _, name, _ in fields.values())))
 
     for ename, espec in enums.iteritems():

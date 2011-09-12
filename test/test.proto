@@ -72,4 +72,8 @@ message Test { //Test Comment 1
     repeated bool r_yn = 48;
 
     repeated AirplaneClass r_cls = 49;
+
+    required uint32 req_a = 50;
+    required int32 req_b = 51;
+    required sint32 req_c = 52;
 }

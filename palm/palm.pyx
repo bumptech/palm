@@ -46,6 +46,7 @@ cdef extern from "palmcore.h":
 class ProtoFieldMissing(Exception): pass
 class ProtoDataError(Exception): pass
 class ProtoValueError(Exception): pass
+class ProtoRequiredFieldMissing(Exception): pass
 
 cdef void byte_string_cb(char *s, uint64_t l, void *ar):
     py_s = unicode(s[:l], "utf-8")
@@ -311,6 +312,9 @@ cdef class ProtoBase:
             pbf_free(self.buf)
 
     def dumps(self):
+        for fnum in self._required:
+            if not pbf_exists(self.buf, fnum) and fnum not in self._mods:
+                raise ProtoRequiredFieldMissing(getattr(self, '_pb_field_name_%i' % fnum))
         if not self._evermod:
             return self._data
         self._save()
