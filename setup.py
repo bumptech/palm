@@ -1,5 +1,7 @@
-from setuptools import setup, Extension, find_packages
+import sys
+sys.path.insert(0, "fake_pyrex")
 from Cython.Distutils import build_ext
+from setuptools import setup, Extension, find_packages
 
 sourcefiles = ["palm/palm.pyx", "palm/palmcore.c"]
 
