@@ -116,6 +116,13 @@ class TestProto(object):
         for f in fields:
             assert cmp(getattr(pb, f), getattr(renew, f))
 
+        pbrenew = test_pb2.Test()
+        pbrenew.ParseFromString(new.dumps())
+
+        for f in fields:
+            assert cmp(getattr(pb, f), getattr(pbrenew, f))
+
+
     def test_string(self):
         self.fields_test('sha1')
 
