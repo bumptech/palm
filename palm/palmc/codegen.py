@@ -1,6 +1,6 @@
 import sys
 import os
-from palm import ProtoBase
+from palm.palm import ProtoBase
 pfx = ''
 o = []
 def convert_proto_name(n):
@@ -14,7 +14,7 @@ def gen_module(messages, imports):
     global o
     pfx = ''
 
-    out('from palm import ProtoBase, RepeatedSequence, ProtoEnumeration\n\n')
+    out('from palm.palm import ProtoBase, RepeatedSequence, ProtoEnumeration\n\n')
     for i in imports:
         out('from %s import *\n' % convert_proto_name(i))
     for (n, fields, subs, en) in messages:

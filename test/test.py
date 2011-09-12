@@ -4,7 +4,7 @@ import operator as op
 
 root = dirname(abspath(__file__))
 system('protoc --python_out=%s -I%s %s/test.proto' % (root, root, root))
-system('cat %s/test.proto | python %s/../palm/palmc/parse.py > %s/test_palm.py' % (root, root, root))
+system('palmc %s' % (root,))
 
 
 import py.test
