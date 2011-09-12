@@ -26,3 +26,4 @@ Bugs/Incompletes
    (should probably use unsigned write as passthrough?)
  * Default without value not supported (type-implied default values)
  * Enum is not terribly crazy about enforcing the value is within range
+ * No forward declarations..
