@@ -6,17 +6,18 @@
  [ ] Parent Chains (test parent chains, copy(), etc)
  [x] Enum
  [x] Bool
- [ ] Limit field numbers >= 1 and < 100k at higher levels (esp on set side)
+ [x] Limit field numbers >= 1 and < 100k at higher levels (esp on set side)
 
  [x] Fixed fields
  [x] Double/float
  [x] Defaults
  [x] Comments
- [ ] Imports
+ [x] Imports
  [ ] Enforce required
 
  [.] Heavy tests against google's official lib
  [ ] Clean up setup, palmc script, organize project, etc.
+ [ ] Segfault on exception
 
 
 Bugs
