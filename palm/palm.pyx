@@ -106,12 +106,7 @@ cdef class ProtoBase:
     cdef int CTYPE_float
 
     def __init__(self, data):
-        self._data = data
-        self.buf = pbf_load(data, len(data))
-        self._evermod = False
-        if (self.buf == NULL):
-            self._data = None
-            raise ProtoDataError("Invalid or unsupported protobuf data")
+        self._pb_init(data)
         self.CTYPE_string = self.TYPE_string
         self.CTYPE_bytes = self.TYPE_bytes
         self.CTYPE_int32 = self.TYPE_int32
@@ -126,6 +121,16 @@ cdef class ProtoBase:
         self.CTYPE_fixed32 = self.TYPE_fixed32
         self.CTYPE_sfixed32 = self.TYPE_sfixed32
         self.CTYPE_float = self.TYPE_float
+
+    def _pb_init(self, data):
+        self._data = data # retains!
+        self.buf = pbf_load(data, len(data))
+        if (self.buf == NULL):
+            self._data = None
+            raise ProtoDataError("Invalid or unsupported protobuf data")
+        self._evermod = False
+        self._retains = []
+        self._mods = {}
 
     def _get_submessage(self, field, typ, name):
         cdef char *res
@@ -293,8 +298,9 @@ cdef class ProtoBase:
         if not self._evermod:
             return self._data
         self._save()
-        self._mods = {}
-        return self._serialize()
+        o = self._serialize()
+        self._pb_init(o)
+        return o
 
     cdef _save_item(self, f, ctyp, v):
         cdef int64_t sq
@@ -305,6 +311,7 @@ cdef class ProtoBase:
             if ctyp == self.CTYPE_string:
                 if type(v) is unicode:
                     v = v.encode("utf-8")
+                    self._retains.append(v)
                 l = len(v)
                 pbf_set_bytes(self.buf,
                     f, v, l)
@@ -353,11 +360,13 @@ cdef class ProtoBase:
                     l = len(o)
                     pbf_set_bytes(self.buf,
                         f, o, l)
+                    self._retains.append(o)
                 elif isinstance(v, RepeatedSequence):
                     if type(v.pb_subtype) != int:
                         assert issubclass(v.pb_subtype, ProtoBase)
                         for i in v:
                             o = i.dumps()
+                            self._retains.append(o)
                             l = len(o)
                             pbf_set_bytes(self.buf,
                             f, o, l)
