@@ -1,3 +1,5 @@
 build/
 palm/palm.c
 *.pyc
+palm.egg-info/
+dist/
