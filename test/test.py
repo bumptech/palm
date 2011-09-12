@@ -3,8 +3,9 @@ from os.path import dirname, abspath
 import operator as op
 
 root = dirname(abspath(__file__))
-system('protoc --python_out=%s -I%s %s/test.proto' % (root, root, root))
+system('protoc --python_out=%s -I%s %s/test.proto %s/foo.proto' % (root, root, root, root))
 system('cat %s/test.proto | python %s/../palm/palmc/parse.py > %s/test_palm.py' % (root, root, root))
+system('cat %s/foo.proto | python %s/../palm/palmc/parse.py > %s/foo_palm.py' % (root, root, root))
 
 
 import py.test
