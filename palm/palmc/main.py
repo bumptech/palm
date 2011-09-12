@@ -3,7 +3,7 @@ import os
 import traceback
 
 from palm.palmc.codegen import gen_module, convert_proto_name
-from palm.palmc.parse import make_parser
+from palm.palmc.parse import make_parser, ProtoParseError
 
 def run():
     assert len(sys.argv) == 2, "exactly one argument required: path to directory with .proto files"
@@ -21,9 +21,15 @@ def run():
             parser = make_parser()
             r = parser.parse(source)
 
-
-            res = r[1]
-            s = gen_module([m for m in res if type(m) is tuple], [m for m in res if type(m) is str])
+            _, res, l = r
+            if l != len(source):
+                raise SyntaxError("Syntax error on line %s near %r" % (
+                    source[:l].count('\n') + 1,
+                    source[l:l+10]))
+            s = gen_module([m for m in res if type(m) is tuple], 
+                    [m for m in res if type(m) is str],
+                    [m for m in res if type(m) is list],
+                    )
             open(os.path.join(d, convert_proto_name(p) + ".py"), 'wb').write(s)
         except:
             sys.stdout.write("[FAIL]\n")
