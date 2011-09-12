@@ -1,3 +1,5 @@
 __pycache__/
-test_pb.py*
+test_palm.py*
+foo_palm.py*
 test_pb2.py*
+foo_pb2.py*
