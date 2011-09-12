@@ -9,7 +9,7 @@ def convert_proto_name(n):
     assert last == "proto"
     return "%s_palm" % p
 
-def gen_module(messages, imports):
+def gen_module(messages, imports, tlenums):
     global pfx
     global o
     pfx = ''
@@ -17,7 +17,11 @@ def gen_module(messages, imports):
     out('from palm.palm import ProtoBase, RepeatedSequence, ProtoEnumeration\n\n')
     for i in imports:
         out('from %s import *\n' % convert_proto_name(i))
-    for (n, fields, subs, en) in messages:
+
+    for ename, espec in tlenums:
+        write_enum(ename, espec)
+
+    for n, (fields, subs, en) in messages:
         write_class(n, fields, subs, en)
 
     all = ''.join(o)
@@ -39,7 +43,7 @@ def write_enum(name, spec):
 class %s(ProtoEnumeration):
 ''' % name)
     for cn, value in sorted(spec.items(), key=lambda (k, v): v):
-        out('%s = %s\n' % (cn, value))
+        out('    %s = %s\n' % (cn, value))
     out('''
 
 TYPE_%s = ProtoBase.TYPE_int32
@@ -74,9 +78,9 @@ class %s(ProtoBase):
         write_enum(ename, espec)
         pfx = pfx[:-4]
 
-    for sn, (sf, ss), ens in subs:
+    for sn, (sf, ss, sens) in subs:
         pfx += "    "
-        write_class(sn, sf, ss, ens)
+        write_class(sn, sf, ss, sens)
         pfx = pfx[:-4]
         snm = clean(sn)
         out(
@@ -87,6 +91,10 @@ class %s(ProtoBase):
     # TODO -- submessages
     for num, field in fields.iteritems():
         write_field(name, num, field)
+
+    out('''
+TYPE_%s = %s
+''' % (name, name))
 
 def write_field_get(num, type, name, default):
     if default is not None:

@@ -1,3 +1,9 @@
+/* this 
+is a multi-line comment
+message CrazyTalk {;
+
+*/
+
 import "foo.proto";
 
 //Test Comment 0

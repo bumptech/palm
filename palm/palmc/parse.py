@@ -1,11 +1,13 @@
 from simpleparse.parser import Parser
-from simpleparse.dispatchprocessor import DispatchProcessor, dispatch, dispatchList
+from simpleparse.dispatchprocessor import DispatchProcessor, dispatch, dispatchList, lines
 
 protofile = r'''
 root                    := whitespace*, message_or_import+
 <whitespace>            := comment / [ \t\n]
-comment                 := "//", -"\n"*
->message_or_import<     := message / import
+comment                 := one_line_comment / multi_line_comment
+one_line_comment        := "//", -"\n"*
+multi_line_comment      := "/*", -"*/"*, "*/"
+>message_or_import<     := message / enum / import / option
 message                 := message_start, message_label!, whitespace*, message_body, whitespace*
 <message_start>         := "message", whitespace+
 message_label           := [a-zA-Z], [a-z0-9A-Z_]*
@@ -19,25 +21,28 @@ field_type              := [a-zA-Z], [a-z0-9A-Z_]*
 field_name              := [a-zA-Z], [a-z0-9A-Z_]*
 field_num               := [0-9]+
 field_default           := "[", "default", whitespace*, "=", whitespace*, field_default_value, whitespace*, "]"
-field_default_value     := field_default_value_s / field_default_value_f / field_default_value_i
+field_default_value     := field_default_value_s / field_default_value_b / field_default_value_f / field_default_value_i / field_default_value_l
 field_default_value_s   := '"', -'"'*, '"'
-field_default_value_i   := [0-9]+
-field_default_value_f   := [0-9]+, field_default_value_fd+
+field_default_value_b   := "true" / "false"
+field_default_value_i   := "-"?, [0-9]+
+field_default_value_f   := "-"?, [0-9]+, field_default_value_fd+
 field_default_value_fd  := ".", [0-9]+
+field_default_value_l   := [a-zA-Z], [a-z0-9A-Z_]*
 enum                    := "enum", whitespace+!, enum_name, whitespace*, "{"!, whitespace*, enum_list, whitespace*, "}"!, whitespace*
 enum_name               := [a-zA-Z], [a-z0-9A-Z_]*
 >enum_list<             := enum_value*
 enum_value              := enum_label, whitespace*, "=", whitespace*, enum_code, whitespace*, ";", whitespace*
 enum_label              := [a-zA-Z], [a-z0-9A-Z_]*
 enum_code               := [0-9]+
->import<                  := "import", whitespace+!, '"'!, import_path, '"'!, whitespace*, ";"!, whitespace*
+>import<                := "import", whitespace+!, '"'!, import_path, '"'!, whitespace*, ";"!, whitespace*
 import_path             := -'"'*
+<option>                := "option", -';'*, ";"!, whitespace*
 '''
 
 class ProtoParseError(Exception):
     def __init__(self, start, end, buf, message):
-        line = lines(start, end, buffer)
-        Exception.__init__("[line %s] " ++ message)
+        line = lines(start, end, buf)
+        Exception.__init__(self, ("[line %s] " % line) + message)
 
 class ProtoProcessor(DispatchProcessor):
     def __init__(self):
@@ -67,7 +72,11 @@ class ProtoProcessor(DispatchProcessor):
         self.enum_sets[cm] = en
         self.enums = {}
 
-        return cm, self.messages[cm][0], [(sm, self.messages[sm], self.enum_sets[sm]) for sm in self.messages[cm][1]], en
+        self.messages[cm] = (self.messages[cm][0], 
+            [(sm, self.messages[sm]) for sm in self.messages[cm][1]],
+            self.enum_sets[cm])
+
+        return cm, self.messages[cm]
 
     def message_label(self, (tag, start, stop, subtags), buffer):
         self.current_message = str(len(self.message_stack)) + '-' +  buffer[start:stop]
@@ -101,7 +110,12 @@ class ProtoProcessor(DispatchProcessor):
 
     def field_default(self, (tag, start, stop, subtags), buffer):
         tag, start, stop, subtags = subtags[0]
-        return buffer[start:stop]
+        b = buffer[start:stop]
+        if b == 'true':
+            b = True
+        elif b == 'false':
+            b = True
+        return b
 
     def enum(self, (tag, start, stop, subtags), buffer):
         res = dispatchList(self, subtags, buffer)
@@ -109,6 +123,7 @@ class ProtoProcessor(DispatchProcessor):
         rest = res[1:]
         fields = dict(rest)
         self.enums[name] = fields
+        return [name, fields]
 
     def enum_value(self, (tag, start, stop, subtags), buffer):
         return tuple(dispatchList(self, subtags, buffer))
@@ -125,7 +140,6 @@ class ProtoProcessor(DispatchProcessor):
     def import_path(self, (tag, start, stop, subtags), buffer):
         path = buffer[start:stop]
         return path
-        self.imports.add(path)
 
 class ProtoParser(Parser):
     def buildProcessor(self):
