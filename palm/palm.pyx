@@ -371,6 +371,7 @@ cdef class ProtoBase:
         cdef int ctyp
 
         for f, v in self._cache.iteritems():
+            assert f <= 100000, "Cannot use field ids greater than 100000 with palm"
             if f in self._mods:
                 pbf_remove(self.buf, f)
                 typ = self._mods[f]
