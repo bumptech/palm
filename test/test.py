@@ -99,7 +99,7 @@ class TestProto(object):
         renew = test_pb.Test(new.dumps())
 
         for f in fields:
-            assert cmp(getattr(pb, f), getattr(new, f))
+            assert cmp(getattr(pb, f), getattr(renew, f))
 
     def test_string(self):
         self.fields_test('sha1')
