@@ -263,7 +263,7 @@ void pbf_free(pbf_protobuf *pbf) {
     pbf_mark *cur;
 
     /* free repeated slabs */
-    for (i=0; i <= pbf->max_mark; i++) {
+    for (i=1; i <= pbf->max_mark; i++) {
         cur = &pbf->marks[i];
         if (cur->num_slabs) {
             for (j=0; j< cur->num_slabs; j++)

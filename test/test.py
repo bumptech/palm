@@ -2,7 +2,7 @@ from subprocess import Popen, PIPE
 from os.path import dirname, abspath
 import operator as op
 
-from palm import ProtoRequiredFieldMissing
+from palm.palm import ProtoRequiredFieldMissing
 
 
 def run(cmd):
@@ -11,8 +11,7 @@ def run(cmd):
 
 root = dirname(abspath(__file__))
 run('protoc --python_out=%s -I%s %s/test.proto %s/foo.proto' % (root, root, root, root))
-run('cat %s/test.proto | python %s/../palm/palmc/parse.py > %s/test_palm.py' % (root, root, root))
-run('cat %s/foo.proto | python %s/../palm/palmc/parse.py > %s/foo_palm.py' % (root, root, root))
+run('palmc %s' % (root))
 
 
 import py.test

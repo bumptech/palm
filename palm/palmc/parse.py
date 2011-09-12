@@ -131,13 +131,5 @@ class ProtoParser(Parser):
     def buildProcessor(self):
         return ProtoProcessor()
 
-parser = ProtoParser(protofile)
-
-from sys import stdin
-r = parser.parse(stdin.read())
-
-from codegen import gen_module
-
-res = r[1]
-s = gen_module([m for m in res if type(m) is tuple], [m for m in res if type(m) is str])
-print s
+def make_parser():
+    return ProtoParser(protofile)

@@ -112,7 +112,8 @@ cdef class ProtoBase:
     cdef int CTYPE_float
     cdef int CTYPE_bool
 
-    def __init__(self, data):
+    def __init__(self, data, **kw):
+        self.buf = NULL
         self._pb_init(data)
         self.CTYPE_string = self.TYPE_string
         self.CTYPE_bytes = self.TYPE_bytes
@@ -129,8 +130,12 @@ cdef class ProtoBase:
         self.CTYPE_sfixed32 = self.TYPE_sfixed32
         self.CTYPE_float = self.TYPE_float
         self.CTYPE_bool = self.TYPE_bool
+        for n, value in kw.iteritems():
+            setattr(self, n, value)
 
     def _pb_init(self, data):
+        if self.buf != NULL:
+            pbf_free(self.buf)
         self._data = data # retains!
         self.buf = pbf_load(data, len(data))
         if (self.buf == NULL):
