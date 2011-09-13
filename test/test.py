@@ -11,7 +11,7 @@ def run(cmd):
 
 root = dirname(abspath(__file__))
 run('protoc --python_out=%s -I%s %s/test.proto %s/foo.proto' % (root, root, root, root))
-run('palmc %s' % (root))
+run('palmc %s %s' % (root, root))
 
 
 import py.test
