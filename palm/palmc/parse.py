@@ -56,21 +56,19 @@ class ProtoProcessor(DispatchProcessor):
     def message(self, (tag, start, stop, subtags), buffer):
         if self.current_message:
             self.message_stack.append((self.current_message, self.enums))
-            self.enums = {}
+        self.enums = {}
 
         if subtags:
             dispatchList(self, subtags, buffer)
         cm = self.current_message
+        en = self.enums
+        self.enum_sets[cm] = en
 
         if self.message_stack:
             self.current_message, self.enums = self.message_stack.pop()
             self.messages[self.current_message][1].append(cm)
         else:
             self.current_message = None
-
-        en = self.enums
-        self.enum_sets[cm] = en
-        self.enums = {}
 
         self.messages[cm] = (self.messages[cm][0], 
             [(sm, self.messages[sm]) for sm in self.messages[cm][1]],
