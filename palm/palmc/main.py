@@ -6,8 +6,9 @@ from palm.palmc.codegen import gen_module, convert_proto_name
 from palm.palmc.parse import make_parser, ProtoParseError
 
 def run():
-    assert len(sys.argv) == 2, "exactly one argument required: path to directory with .proto files"
+    assert len(sys.argv) == 3, "exactly two arguments required: path to directory with .proto files and path to destination package"
     d = sys.argv[1]
+    od = sys.argv[2]
 
     protos = [f for f in os.listdir(d) if f.endswith(".proto")]
 
@@ -30,7 +31,7 @@ def run():
                     [m for m in res if type(m) is str],
                     [m for m in res if type(m) is list],
                     )
-            open(os.path.join(d, convert_proto_name(p) + ".py"), 'wb').write(s)
+            open(os.path.join(od, convert_proto_name(p) + ".py"), 'wb').write(s)
         except:
             sys.stdout.write("[FAIL]\n")
             sys.stdout.flush()
