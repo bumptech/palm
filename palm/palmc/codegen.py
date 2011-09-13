@@ -114,11 +114,12 @@ def write_field(cname, num, field):
         out(
 '''
     class Repeated_%s(RepeatedSequence): 
-        pb_subtype = None 
-    Repeated_%s.pb_subtype = %sTYPE_%s
+        @property
+        def pb_subtype(self):
+            return %sTYPE_%s
 
     TYPE_Repeated_%s = Repeated_%s
-''' % (name, name,
+''' % (name,
     'ProtoBase.' if hasattr(ProtoBase, 'TYPE_%s' % type) else '',
     type, name, name)
     )
