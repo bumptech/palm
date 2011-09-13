@@ -48,24 +48,24 @@ class ProtoProcessor(DispatchProcessor):
     def __init__(self):
         self.current_message = None
         self.messages = {}
-        self.enums = {}
+        self.message_enums = {}
         self.enum_sets = {}
         self.message_stack = []
         self.imports = set()
 
     def message(self, (tag, start, stop, subtags), buffer):
         if self.current_message:
-            self.message_stack.append((self.current_message, self.enums))
-        self.enums = {}
+            self.message_stack.append((self.current_message, self.message_enums))
+        self.message_enums = {}
 
         if subtags:
             dispatchList(self, subtags, buffer)
         cm = self.current_message
-        en = self.enums
+        en = self.message_enums
         self.enum_sets[cm] = en
 
         if self.message_stack:
-            self.current_message, self.enums = self.message_stack.pop()
+            self.current_message, self.message_enums = self.message_stack.pop()
             self.messages[self.current_message][1].append(cm)
         else:
             self.current_message = None
@@ -120,7 +120,10 @@ class ProtoProcessor(DispatchProcessor):
         name = res[0]
         rest = res[1:]
         fields = dict(rest)
-        self.enums[name] = fields
+        if self.current_message:
+            # Shove this enum into storage for the message that is
+            # currently being parsed.
+            self.message_enums[name] = fields
         return [name, fields]
 
     def enum_value(self, (tag, start, stop, subtags), buffer):
