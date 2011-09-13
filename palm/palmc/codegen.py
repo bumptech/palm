@@ -73,16 +73,19 @@ class %s(ProtoBase):
        ", ".join(str(num) for num, (req, _, _, _) in fields.iteritems() if req == 'required'),
        "', '".join(name for _, _, name, _ in fields.values())))
 
+    ns = set()
     for ename, espec in enums.iteritems():
         pfx += "    "
         write_enum(ename, espec)
         pfx = pfx[:-4]
+        ns.add(ename)
 
     for sn, (sf, ss, sens) in subs:
         pfx += "    "
         write_class(sn, sf, ss, sens)
         pfx = pfx[:-4]
         snm = clean(sn)
+        ns.add(snm)
         out(
 '''
     TYPE_%s = %s
@@ -90,7 +93,7 @@ class %s(ProtoBase):
 
     # TODO -- submessages
     for num, field in fields.iteritems():
-        write_field(name, num, field)
+        write_field(name, num, field, ns)
 
     out('''
 TYPE_%s = %s
@@ -108,21 +111,26 @@ def write_field_get(num, type, name, default):
             r = self._buf_get(%s, self.TYPE_%s, '%s')'''
     return r % (num, type, name)
 
-def write_field(cname, num, field):
+def write_field(cname, num, field, parent_ns):
     req, type, name, default = field
+    if hasattr(ProtoBase, 'TYPE_%s' % type):
+        scope = 'ProtoBase.'
+    elif type in parent_ns:
+        scope = '%s.' % cname
+    else:
+        scope = ''
     if req == 'repeated':
         out(
 '''
     class Repeated_%s(RepeatedSequence): 
-        @property
-        def pb_subtype(self):
-            return %sTYPE_%s
+        class pb_subtype(object):
+            def __get__(self, instance, cls):
+                return %sTYPE_%s
+        pb_subtype = pb_subtype()
+
 
     TYPE_Repeated_%s = Repeated_%s
-''' % (name,
-    'ProtoBase.' if hasattr(ProtoBase, 'TYPE_%s' % type) else '',
-    type, name, name)
-    )
+''' % (name, scope, type, name, name))
         type = 'Repeated_%s' % name
     out(
 '''
