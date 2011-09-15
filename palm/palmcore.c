@@ -196,7 +196,7 @@ unsigned char *pbf_serialize(pbf_protobuf *pbf, int *length) {
     /* XXX protect against giant allocations? */
 
     /* maximum size needed? */
-    uint32_t *fields = malloc(pbf->max_mark * sizeof(uint32_t));
+    uint32_t *fields = malloc((pbf->max_mark + 1) * sizeof(uint32_t));
     uint32_t *cf = fields;
     for(x=1; x <= pbf->max_mark; x++) {
         head = mark = &pbf->marks[x];
