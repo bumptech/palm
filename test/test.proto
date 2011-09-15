@@ -6,6 +6,11 @@ message CrazyTalk {;
 
 import "foo.proto";
 
+message Secret {
+    required int32 code = 1;
+    required string message = 2;
+}
+
 //Test Comment 0
 message Test { //Test Comment 1
     message Foo {
@@ -82,4 +87,6 @@ message Test { //Test Comment 1
     required uint32 req_a = 50;
     required int32 req_b = 51;
     required sint32 req_c = 52;
+
+    optional Secret secret = 53;
 }

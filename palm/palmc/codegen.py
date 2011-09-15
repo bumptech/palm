@@ -58,9 +58,9 @@ def write_class(name, fields, subs, enums):
 '''
 class %s(ProtoBase):
     def __init__(self, _pbf_buf='', _pbf_parent_callback=None, **kw): 
-        ProtoBase.__init__(self, _pbf_buf, **kw)
-        self._cache = {}
         self._pbf_parent_callback = _pbf_parent_callback
+        self._cache = {}
+        ProtoBase.__init__(self, _pbf_buf, **kw)
         self._pbf_establish_parent_callback = None
         self._required = [%s]
 
@@ -100,17 +100,17 @@ class %s(ProtoBase):
 TYPE_%s = %s
 ''' % (name, name))
 
-def write_field_get(num, type, name, default):
+def write_field_get(num, type, name, default, scope):
     if default is not None:
         r = '''
             try:
-                r = self._buf_get(%s, self.TYPE_%s, '%s')
+                r = self._buf_get(%s, %sTYPE_%s, '%s')
             except:
                 r = ''' + str(default)
     else:
         r = '''
-            r = self._buf_get(%s, self.TYPE_%s, '%s')'''
-    return r % (num, type, name)
+            r = self._buf_get(%s, %sTYPE_%s, '%s')'''
+    return r % (num, scope, type, name)
 
 def write_field(cname, num, field, parent_ns):
     req, type, name, default = field
@@ -133,61 +133,60 @@ def write_field(cname, num, field, parent_ns):
     TYPE_Repeated_%s = Repeated_%s
 ''' % (name, scope, type, name, name))
         type = 'Repeated_%s' % name
+        scope = 'self.'
     out(
 '''
-    def _get_%s(self):
-        if %s in self._cache:
-            r = self._cache[%s]
-        else:%s
-            self._cache[%s] = r
+    def _get_%(name)s(self):
+        if %(num)s in self._cache:
+            r = self._cache[%(num)s]
+        else:%(field_get)s
+            self._cache[%(num)s] = r
         return r
 
-    def _establish_parentage_%s(self, v):
+    def _establish_parentage_%(name)s(self, v):
         if isinstance(v, (ProtoBase, RepeatedSequence)):
             if v._pbf_parent_callback:
-                assert (v._pbf_parent_callback == self._mod_%s), "subobjects can only have one parent--use copy()?"
+                assert (v._pbf_parent_callback == self._mod_%(name)s), "subobjects can only have one parent--use copy()?"
             else:
-                v._pbf_parent_callback = self._mod_%s
-                v._pbf_establish_parent_callback = self._establish_parentage_%s
+                v._pbf_parent_callback = self._mod_%(name)s
+                v._pbf_establish_parent_callback = self._establish_parentage_%(name)s
 
-    def _set_%s(self, v):
+    def _set_%(name)s(self, v):
         self._evermod = True
         if self._pbf_parent_callback:
             self._pbf_parent_callback()
         if isinstance(v, (ProtoBase, RepeatedSequence)):
-            self._establish_parentage_%s(v)
-        self._cache[%s] = v
-        self._mods[%s] = self.TYPE_%s
+            self._establish_parentage_%(name)s(v)
+        self._cache[%(num)s] = v
+        self._mods[%(num)s] = %(scope)sTYPE_%(type)s
 
-    def _mod_%s(self):
+    def _mod_%(name)s(self):
         self._evermod = True
         if self._pbf_parent_callback:
             self._pbf_parent_callback()
-        self._mods[%s] = self.TYPE_%s
+        self._mods[%(num)s] = %(scope)sTYPE_%(type)s
 
-    def _del_%s(self):
+    def _del_%(name)s(self):
         self._evermod = True
         if self._pbf_parent_callback:
             self._pbf_parent_callback()
-        if %s in self._cache:
-            del self._cache[%s]
-        if %s in self._mods:
-            del self._mods[%s]
-        self._buf_del(%s)
+        if %(num)s in self._cache:
+            del self._cache[%(num)s]
+        if %(num)s in self._mods:
+            del self._mods[%(num)s]
+        self._buf_del(%(num)s)
 
-    _pb_field_name_%d = "%s"
+    _pb_field_name_%(num)d = "%(num)s"
 
-    %s = property(_get_%s, _set_%s, _del_%s)
+    %(name)s = property(_get_%(name)s, _set_%(name)s, _del_%(name)s)
 
     @property
-    def %s__exists(self):
-        return %s in self._mods or self._buf_exists(%s)
+    def %(name)s__exists(self):
+        return %(num)s in self._mods or self._buf_exists(%(num)s)
 
-''' % (name, num, num, write_field_get(num, type, name, default), num,
-    name, name, name, name,
-    name, name, num, num, type,
-    name, num, type,
-    name, num, num, num, num, num,
-    num, name,
-    name, name, name, name,
-    name, num, num))
+''' % {
+    'name':name, 
+    'num':num, 
+    'field_get':write_field_get(num, type, name, default, scope), 
+    'type':type,
+    'scope':scope})

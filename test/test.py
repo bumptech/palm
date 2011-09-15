@@ -28,6 +28,9 @@ def approx_list_match(l1, l2):
 def foo_match(f1, f2):
     return f1.baz == f2.baz
 
+def secret_match(f1, f2):
+    return f1.code == f2.code and f1.message == f2.message
+
 def list_foo_match(l1, l2):
     for i1, i2 in zip(l1, l2):
         if not foo_match(i1, i2):
@@ -93,6 +96,9 @@ class TestProto(object):
 
         pb.r_yn.extend([True, False, True])
 
+        pb.secret.code = 42
+        pb.secret.message = "ssshhh!"
+
         return pb
 
     def test_fields(self):
@@ -144,8 +150,21 @@ class TestProto(object):
     def test_float(self):
         self.fields_test('o')
 
-    def test_message(self):
+    def test_getting_internal_message_value(self):
+        # the Foo message defined inside of Test
         self.fields_test('msg', cmp=foo_match)
+
+    def test_getting_external_message_value(self):
+        # the Secret message defined outside of Test
+        self.fields_test('secret', cmp=secret_match)
+
+    def test_setting_external_message_value(self):
+        original = test_palm.Test(req_a=1, req_b=1, req_c=1)
+        original.secret = test_palm.Secret(code=1234, message="boo!")
+        dumped = original.dumps()
+        loaded = test_palm.Test(dumped)
+        assert original.secret.code == loaded.secret.code
+        assert original.secret.message == loaded.secret.message
 
     def test_bool(self):
         self.fields_test('yn')
@@ -234,3 +253,4 @@ class TestProto(object):
             pass
         else:
             assert False, "Missing required field not caught"
+
