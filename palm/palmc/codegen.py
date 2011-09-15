@@ -63,6 +63,7 @@ class %s(ProtoBase):
         ProtoBase.__init__(self, _pbf_buf, **kw)
         self._pbf_establish_parent_callback = None
         self._required = [%s]
+        ProtoBase.__init__(self, _pbf_buf, **kw)
 
     def fields(self):
         return ['%s']
