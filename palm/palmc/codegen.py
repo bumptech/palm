@@ -60,7 +60,6 @@ class %s(ProtoBase):
     def __init__(self, _pbf_buf='', _pbf_parent_callback=None, **kw): 
         self._pbf_parent_callback = _pbf_parent_callback
         self._cache = {}
-        ProtoBase.__init__(self, _pbf_buf, **kw)
         self._pbf_establish_parent_callback = None
         self._required = [%s]
         ProtoBase.__init__(self, _pbf_buf, **kw)
