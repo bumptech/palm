@@ -198,14 +198,14 @@ class TestProto(object):
     def test_enum(self):
         m = self.get_proto()
         o = test_palm.Test(m.SerializeToString())
-        o.cls = test_palm.Test.AirplaneClass.BUSINESS
+        o.cls = test_palm.Test.BUSINESS
         n = test_palm.Test(o.dumps())
         assert n.cls == o.cls
 
     def test_enum_repeated(self):
         m = self.get_proto()
         o = test_palm.Test(m.SerializeToString())
-        o.r_cls.extend([o.AirplaneClass.FIRST, o.AirplaneClass.BUSINESS])
+        o.r_cls.extend([o.FIRST, o.BUSINESS])
         n = test_palm.Test(o.dumps())
         assert n.r_cls == o.r_cls
 

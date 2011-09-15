@@ -14,7 +14,7 @@ def gen_module(messages, imports, tlenums):
     global o
     pfx = ''
 
-    out('from palm.palm import ProtoBase, RepeatedSequence, ProtoEnumeration\n\n')
+    out('from palm.palm import ProtoBase, RepeatedSequence\n\n')
     for i in imports:
         out('from %s import *\n' % convert_proto_name(i))
 
@@ -40,10 +40,11 @@ def clean(name):
 def write_enum(name, spec):
     out(
 '''
-class %s(ProtoEnumeration):
+# Enumeration: %s
 ''' % name)
     for cn, value in sorted(spec.items(), key=lambda (k, v): v):
-        out('    %s = %s\n' % (cn, value))
+        out('''
+%s = %s\n''' % (cn, value))
     out('''
 
 TYPE_%s = ProtoBase.TYPE_int32
