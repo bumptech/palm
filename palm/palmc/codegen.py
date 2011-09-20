@@ -184,6 +184,11 @@ def write_field(cname, num, field, parent_ns):
     def %(name)s__exists(self):
         return %(num)s in self._mods or self._buf_exists(%(num)s)
 
+    def __contains__(self, item):
+        try:
+            return getattr(self, '%%s__exists' %% item)
+        except AttributeError:
+            return False
 ''' % {
     'name':name, 
     'num':num, 

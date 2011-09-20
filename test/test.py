@@ -254,3 +254,9 @@ class TestProto(object):
         else:
             assert False, "Missing required field not caught"
 
+    def test_contains_support_works(self):
+        pb = test_palm.Test(a=1, b=2, r="test")
+        for field in ['a', 'b', 'r']:
+            assert field in pb
+        for field in ['c', 'p', 'asdggouasdfs']:
+            assert field not in pb
