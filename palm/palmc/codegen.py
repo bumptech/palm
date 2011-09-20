@@ -22,7 +22,7 @@ def gen_module(messages, imports, tlenums):
         write_enum(ename, espec)
 
     for n, (fields, subs, en) in messages:
-        write_class(n, fields, subs, en)
+        write_class(n, '', fields, subs, en)
 
     all = ''.join(o)
 
@@ -51,7 +51,7 @@ TYPE_%s = ProtoBase.TYPE_int32
 '''
 % name)
 
-def write_class(name, fields, subs, enums):
+def write_class(name, scope, fields, subs, enums):
     global pfx
     name = clean(name)
     out(
@@ -81,9 +81,10 @@ class %s(ProtoBase):
         pfx = pfx[:-4]
         ns.add(ename)
 
+    next_scope = name if not scope else ".".join([scope, name])
     for sn, (sf, ss, sens) in subs:
         pfx += "    "
-        write_class(sn, sf, ss, sens)
+        write_class(sn, next_scope, sf, ss, sens)
         pfx = pfx[:-4]
         snm = clean(sn)
         ns.add(snm)
@@ -94,7 +95,7 @@ class %s(ProtoBase):
 
     # TODO -- submessages
     for num, field in fields.iteritems():
-        write_field(name, num, field, ns)
+        write_field(name, scope, num, field, ns)
 
     out('''
 TYPE_%s = %s
@@ -112,12 +113,12 @@ def write_field_get(num, type, name, default, scope):
             r = self._buf_get(%s, %sTYPE_%s, '%s')'''
     return r % (num, scope, type, name)
 
-def write_field(cname, num, field, parent_ns):
+def write_field(cname, parent, num, field, parent_ns):
     req, type, name, default = field
     if hasattr(ProtoBase, 'TYPE_%s' % type):
         scope = 'ProtoBase.'
     elif type in parent_ns:
-        scope = '%s.' % cname
+        scope = '%s.' % (cname if not parent else ".".join([parent, cname]))
     else:
         scope = ''
     if req == 'repeated':
