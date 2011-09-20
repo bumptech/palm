@@ -260,3 +260,14 @@ class TestProto(object):
             assert field in pb
         for field in ['c', 'p', 'asdggouasdfs']:
             assert field not in pb
+
+    def test_deeply_nested_messages(self):
+        pb = test_palm.Test()
+        pb.msg = pb.Foo()
+        pb.msg.flop = pb.msg.Flop(desc='hhhhaaa')
+        # if we don't have an exception here, i'm feeling good
+        assert pb.msg.flop.desc == 'hhhhaaa'
+        pb.msg.flop.desc = 'rrrraaa'
+        assert pb.msg.flop.desc == 'rrrraaa'
+        del pb.msg.flop.desc
+        assert 'desc' not in pb.msg.flop

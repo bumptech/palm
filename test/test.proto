@@ -15,6 +15,11 @@ message Secret {
 message Test { //Test Comment 1
     message Foo {
         optional string baz = 8;
+        
+        message Flop {
+            optional string desc = 1;
+        }
+        optional Flop flop = 9;
     }
 
     enum AirplaneClass {
