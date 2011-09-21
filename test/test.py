@@ -2,7 +2,7 @@ from subprocess import Popen, PIPE
 from os.path import dirname, abspath
 import operator as op
 
-from palm.palm import ProtoRequiredFieldMissing
+from palm.palm import ProtoRequiredFieldMissing, ProtoValueError
 
 
 def run(cmd):
@@ -271,3 +271,24 @@ class TestProto(object):
         assert pb.msg.flop.desc == 'rrrraaa'
         del pb.msg.flop.desc
         assert 'desc' not in pb.msg.flop
+
+    def test_assigning_list_to_repeated_field_raises_ProtoValueError(self):
+        pb = test_palm.Test()
+        try:
+            pb.r_sha1 = ['abc', '123']
+        except ProtoValueError:
+            pass
+        except Exception, e:
+            assert 0, "UNEXPECTED EXCEPTION: %s" % e
+        else:
+            assert 0, "DID NOT RAISE"
+
+    def test_instantiating_a_repeated_with_a_list_raises_ProtoValueError(self):
+        try:
+            pb = test_palm.Test(r_sha1=['this', 'n', 'that'])
+        except ProtoValueError:
+            pass
+        except Exception, e:
+            assert 0, "UNEXPECTED EXCEPTION: %s" % e
+        else:
+            assert 0, "DID NOT RAISE"

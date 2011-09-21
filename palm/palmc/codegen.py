@@ -14,7 +14,7 @@ def gen_module(messages, imports, tlenums):
     global o
     pfx = ''
 
-    out('from palm.palm import ProtoBase, RepeatedSequence\n\n')
+    out('from palm.palm import ProtoBase, RepeatedSequence, ProtoValueError\n\n')
     for i in imports:
         out('from %s import *\n' % convert_proto_name(i))
 
@@ -158,6 +158,9 @@ def write_field(cname, parent, num, field, parent_ns):
             self._pbf_parent_callback()
         if isinstance(v, (ProtoBase, RepeatedSequence)):
             self._establish_parentage_%(name)s(v)
+        elif isinstance(v, list):
+            list_assign_error = "Can't assign list to repeated field %(name)s"
+            raise ProtoValueError(list_assign_error)
         self._cache[%(num)s] = v
         self._mods[%(num)s] = %(scope)sTYPE_%(type)s
 
