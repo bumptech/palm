@@ -193,6 +193,11 @@ def write_field(cname, parent, num, field, parent_ns):
             return getattr(self, '%%s__exists' %% item)
         except AttributeError:
             return False
+
+    @property
+    def %(name)s__type(self):
+        return %(scope)sTYPE_%(type)s
+
 ''' % {
     'name':name, 
     'num':num, 
