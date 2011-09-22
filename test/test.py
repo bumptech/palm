@@ -292,3 +292,7 @@ class TestProto(object):
             assert 0, "UNEXPECTED EXCEPTION: %s" % e
         else:
             assert 0, "DID NOT RAISE"
+
+    def test_inspecting_types_works(self):
+        pb = test_palm.Test()
+        assert pb.get_field_type('secret') == test_palm.Secret

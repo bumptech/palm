@@ -418,6 +418,73 @@ cdef class ProtoBase:
     def copy(self):
         return self.__class__(self.dumps())
 
+    @classmethod
+    def get_field_type(cls, field_name):
+        return getattr(cls, field_name)
+
+class _NO_DEFAULT(object): pass
+
+class ProtoField(object):
+    def __init__(self, name, field_number, type_getter, default=_NO_DEFAULT):
+        self.name = name
+        self.number = field_number
+        self._proto_type = None
+        self.default = default
+        self._type_getter = type_getter
+
+    @property
+    def proto_type(self):
+        if not self._proto_type:
+            self._proto_type = self._type_getter()
+        return self._proto_type
+
+    def __get__(self, instance, other):
+        if not instance:
+            return self.proto_type
+        if self.number in instance._cache:
+            r = instance._cache[self.number]
+        else:
+            try:
+                r = instance._buf_get(self.number, self.proto_type, self.name)
+            except:
+                if self.default is not _NO_DEFAULT:
+                    r = self.default
+                else:
+                    raise
+            instance._cache[self.number] = r
+        return r
+
+    def __set__(self, instance, v):
+        instance._evermod = True
+        if instance._pbf_parent_callback:
+            instance._pbf_parent_callback()
+        if isinstance(v, (ProtoBase, RepeatedSequence)):
+            self._establish_parentage(instance, v)
+        elif isinstance(v, list):
+            list_assign_error = "Can't assign list to repeated field %s" % self.name
+            raise ProtoValueError(list_assign_error)
+        instance._cache[self.number] = v
+        instance._mods[self.number] = self.proto_type
+
+    def __delete__(self, instance):
+        instance._evermod = True
+        if instance._pbf_parent_callback:
+            instance._pbf_parent_callback()
+        if self.number in instance._cache:
+            del instance._cache[self.number]
+        if self.number in instance._mods:
+            del instance._mods[self.number]
+        instance._buf_del(self.number)
+
+
+    def _establish_parentage(self, instance, v):
+        if isinstance(v, (ProtoBase, RepeatedSequence)):
+            if v._pbf_parent_callback:
+                assert (v._pbf_parent_callback == getattr(instance, '_mod_%s' % self.name, None)), "subobjects can only have one parent--use copy()?"
+            else:
+                v._pbf_parent_callback = getattr(instance, '_mod_%s' % self.name, None)
+                v._pbf_establish_parent_callback = self._establish_parentage
+
 cdef class RepeatedSequence(list):
     pb_subtype = None
     def __init__(self, *args, **kw):
@@ -427,7 +494,7 @@ cdef class RepeatedSequence(list):
 
     def _pbf_child_touched(self, v=None):
         if isinstance(v, (ProtoBase, RepeatedSequence)):
-            self._pbf_establish_parent_callback(v)
+            self._pbf_establish_parent_callback(self, v)
         self._pbf_parent_callback()
 
     # now--the ugly business of intercepting list modifications
