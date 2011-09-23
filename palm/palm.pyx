@@ -455,7 +455,10 @@ cdef class RepeatedSequence(list):
         '''Essentially, shed parentage
         '''
         l = list(self)
-        return RepeatedSequence(l)
+        # I'm not exactly sure why I have to do __class__ below and can't do
+        # RepeatedSequence like was done previously. All I know is that
+        # __class__ works. -- dowski
+        return self.__class__(l)
 
     def add(self):
         i = self.pb_subtype()
