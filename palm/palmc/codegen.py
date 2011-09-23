@@ -14,7 +14,7 @@ def gen_module(messages, imports, tlenums):
     global o
     pfx = ''
 
-    out('from palm.palm import ProtoBase, RepeatedSequence, ProtoValueError\n\n')
+    out('from palm.palm import ProtoBase, ProtoField, RepeatedSequence, ProtoValueError\n\n')
     for i in imports:
         out('from %s import *\n' % convert_proto_name(i))
 
@@ -68,7 +68,7 @@ class %s(ProtoBase):
         return ['%s']
 
     def __str__(self):
-        return '\\n'.join('%%s: %%s' %% (f, repr(getattr(self, '_get_%%s' %% f)())) for f in self.fields()
+        return '\\n'.join('%%s: %%s' %% (f, repr(getattr(self, '%%s' %% f))) for f in self.fields()
                           if getattr(self, '%%s__exists' %% f))
 ''' % (name,
        ", ".join(str(num) for num, (req, _, _, _) in fields.iteritems() if req == 'required'),
@@ -101,18 +101,6 @@ class %s(ProtoBase):
 TYPE_%s = %s
 ''' % (name, name))
 
-def write_field_get(num, type, name, default, scope):
-    if default is not None:
-        r = '''
-            try:
-                r = self._buf_get(%s, %sTYPE_%s, '%s')
-            except:
-                r = ''' + str(default)
-    else:
-        r = '''
-            r = self._buf_get(%s, %sTYPE_%s, '%s')'''
-    return r % (num, scope, type, name)
-
 def write_field(cname, parent, num, field, parent_ns):
     req, type, name, default = field
     if hasattr(ProtoBase, 'TYPE_%s' % type):
@@ -134,35 +122,10 @@ def write_field(cname, parent, num, field, parent_ns):
     TYPE_Repeated_%s = Repeated_%s
 ''' % (name, scope, type, name, name))
         type = 'Repeated_%s' % name
-        scope = 'self.'
+        scope = '%s.' % (cname if not parent else ".".join([parent, cname]))
     out(
 '''
-    def _get_%(name)s(self):
-        if %(num)s in self._cache:
-            r = self._cache[%(num)s]
-        else:%(field_get)s
-            self._cache[%(num)s] = r
-        return r
-
-    def _establish_parentage_%(name)s(self, v):
-        if isinstance(v, (ProtoBase, RepeatedSequence)):
-            if v._pbf_parent_callback:
-                assert (v._pbf_parent_callback == self._mod_%(name)s), "subobjects can only have one parent--use copy()?"
-            else:
-                v._pbf_parent_callback = self._mod_%(name)s
-                v._pbf_establish_parent_callback = self._establish_parentage_%(name)s
-
-    def _set_%(name)s(self, v):
-        self._evermod = True
-        if self._pbf_parent_callback:
-            self._pbf_parent_callback()
-        if isinstance(v, (ProtoBase, RepeatedSequence)):
-            self._establish_parentage_%(name)s(v)
-        elif isinstance(v, list):
-            list_assign_error = "Can't assign list to repeated field %(name)s"
-            raise ProtoValueError(list_assign_error)
-        self._cache[%(num)s] = v
-        self._mods[%(num)s] = %(scope)sTYPE_%(type)s
+    %(name)s = ProtoField("%(name)s", %(num)s, lambda: %(scope)sTYPE_%(type)s%(default)s)
 
     def _mod_%(name)s(self):
         self._evermod = True
@@ -170,19 +133,8 @@ def write_field(cname, parent, num, field, parent_ns):
             self._pbf_parent_callback()
         self._mods[%(num)s] = %(scope)sTYPE_%(type)s
 
-    def _del_%(name)s(self):
-        self._evermod = True
-        if self._pbf_parent_callback:
-            self._pbf_parent_callback()
-        if %(num)s in self._cache:
-            del self._cache[%(num)s]
-        if %(num)s in self._mods:
-            del self._mods[%(num)s]
-        self._buf_del(%(num)s)
-
     _pb_field_name_%(num)d = "%(num)s"
 
-    %(name)s = property(_get_%(name)s, _set_%(name)s, _del_%(name)s)
 
     @property
     def %(name)s__exists(self):
@@ -201,6 +153,6 @@ def write_field(cname, parent, num, field, parent_ns):
 ''' % {
     'name':name, 
     'num':num, 
-    'field_get':write_field_get(num, type, name, default, scope), 
     'type':type,
-    'scope':scope})
+    'scope':scope,
+    'default':', default=%s' % default if default is not None else ''})
