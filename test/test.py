@@ -292,3 +292,13 @@ class TestProto(object):
             assert 0, "UNEXPECTED EXCEPTION: %s" % e
         else:
             assert 0, "DID NOT RAISE"
+
+    def test_can_copy_repeated_fields(self):
+        pb1 = test_palm.Test(req_a=1, req_b=2, req_c=3)
+        pb2 = pb1.copy()
+
+        pb1.r_sha1.extend(['a', 'b', 'c'])
+
+        pb2.r_sha1 = pb1.r_sha1.copy()
+
+        assert pb1.r_sha1 == pb2.r_sha1
