@@ -39,7 +39,7 @@ typedef struct pbf_protobuf {
     int max_mark;
     int parsed;
 } pbf_protobuf;
-pbf_protobuf * pbf_load(char *data, uint64_t size);
+pbf_protobuf * pbf_load(char *data, uint64_t size, char *stringmap, uint64_t maxstringid);
 
 void pbf_free(pbf_protobuf *pbf);
 

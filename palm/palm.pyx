@@ -4,12 +4,17 @@ ctypedef unsigned int uint32_t
 ctypedef unsigned long long uint64_t
 
 cdef extern from "stdlib.h":
+    void * malloc(size_t)
     void free(void *)
+
+cdef extern from "string.h":
+    void memset(void *, int, size_t)
 
 cdef extern from "palmcore.h":
     ctypedef struct pbf_protobuf:
         pass
-    pbf_protobuf * pbf_load(char *data, uint64_t size)
+    pbf_protobuf * pbf_load(char *data, uint64_t size, 
+        char *stringmap, uint64_t maxstringid)
     void pbf_free(pbf_protobuf *pbf)
     int pbf_get_bytes(pbf_protobuf *pbf, uint64_t field_num,
         char **out, uint64_t *length)
@@ -95,6 +100,8 @@ cdef class ProtoBase:
      ) = range(15)
 
     cdef pbf_protobuf *buf
+    cdef char * stringmap
+    cdef uint64_t maxstring
 
     cdef int CTYPE_string
     cdef int CTYPE_bytes
@@ -114,6 +121,17 @@ cdef class ProtoBase:
 
     def __init__(self, data, **kw):
         self.buf = NULL
+
+        if self._pbf_strings:
+            self.maxstring = max(self._pbf_strings)
+            self.stringmap = <char *>malloc(self.maxstring + 1)
+            memset(self.stringmap, 0, self.maxstring + 1)
+            for i in self._pbf_strings:
+                self.stringmap[i] = 1
+        else:
+            self.stringmap = NULL
+            self.maxstring = 0
+
         self._pb_init(data)
         self.CTYPE_string = self.TYPE_string
         self.CTYPE_bytes = self.TYPE_bytes
@@ -137,10 +155,12 @@ cdef class ProtoBase:
         if self.buf != NULL:
             pbf_free(self.buf)
         self._data = data # retains!
-        self.buf = pbf_load(data, len(data))
+
+        self.buf = pbf_load(data, len(data), self.stringmap, self.maxstring)
+
         if (self.buf == NULL):
             self._data = None
-            raise ProtoDataError("Invalid or unsupported protobuf data")
+            raise ProtoDataError("Invalid or unsupported protobuf data for this message")
         self._evermod = False
         self._retains = []
         self._mods = {}
@@ -315,6 +335,9 @@ cdef class ProtoBase:
     def __dealloc__(self):
         if self.buf != NULL:
             pbf_free(self.buf)
+        if self.stringmap != NULL:
+            free(self.stringmap)
+
 
     def dumps(self):
         for fnum in self._required:

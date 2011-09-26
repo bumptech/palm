@@ -67,6 +67,8 @@ class %s(ProtoBase):
     def fields(self):
         return ['%s']
 
+    _pbf_strings = []
+
     def __str__(self):
         return '\\n'.join('%%s: %%s' %% (f, repr(getattr(self, '_get_%%s' %% f)())) for f in self.fields()
                           if getattr(self, '%%s__exists' %% f))
@@ -74,12 +76,12 @@ class %s(ProtoBase):
        ", ".join(str(num) for num, (req, _, _, _) in fields.iteritems() if req == 'required'),
        "', '".join(name for _, _, name, _ in fields.values())))
 
-    ns = set()
+    ns = {}
     for ename, espec in enums.iteritems():
         pfx += "    "
         write_enum(ename, espec)
         pfx = pfx[:-4]
-        ns.add(ename)
+        ns[ename] = 'enum'
 
     next_scope = name if not scope else ".".join([scope, name])
     for sn, (sf, ss, sens) in subs:
@@ -87,7 +89,7 @@ class %s(ProtoBase):
         write_class(sn, next_scope, sf, ss, sens)
         pfx = pfx[:-4]
         snm = clean(sn)
-        ns.add(snm)
+        ns[snm] = 'message'
         out(
 '''
     TYPE_%s = %s
@@ -115,10 +117,13 @@ def write_field_get(num, type, name, default, scope):
 
 def write_field(cname, parent, num, field, parent_ns):
     req, type, name, default = field
+    is_str = False
     if hasattr(ProtoBase, 'TYPE_%s' % type):
         scope = 'ProtoBase.'
+        is_str = type == "bytes" or type == "string"
     elif type in parent_ns:
         scope = '%s.' % (cname if not parent else ".".join([parent, cname]))
+        is_str = parent_ns[type] == 'message'
     else:
         scope = ''
     if req == 'repeated':
@@ -198,9 +203,11 @@ def write_field(cname, parent, num, field, parent_ns):
     def %(name)s__type(self):
         return %(scope)sTYPE_%(type)s
 
+    %(stringblock)s
 ''' % {
     'name':name, 
     'num':num, 
     'field_get':write_field_get(num, type, name, default, scope), 
     'type':type,
-    'scope':scope})
+    'scope':scope,
+    'stringblock' : ('_pbf_strings.append(%s)' % num) if is_str else ''})

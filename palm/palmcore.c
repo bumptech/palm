@@ -134,7 +134,7 @@ static inline pbf_mark * pbf_get_mark_for_write(pbf_protobuf *pbf,
     return cur;
 }
 
-static void pbf_scan (pbf_protobuf *pbf) {
+static void pbf_scan (pbf_protobuf *pbf, char* stringmap, int maxstringid) {
     uint64_t key;
     int success, iters;
     uint64_t field_num;
@@ -151,6 +151,12 @@ static void pbf_scan (pbf_protobuf *pbf) {
 
         field_num = key >> 3;
         field_type = key & 7;
+
+        // validate things that should be bytestrings are indeed, and vice-versa
+        if (field_num <= maxstringid && 
+                ((field_type == pbf_type_length && !stringmap[field_num]) ||
+                 (field_type != pbf_type_length && stringmap[field_num])))
+            return;
 
         cur = pbf_get_mark_for_write(pbf, field_num, field_type, &head);
         if (!cur) return; // something failed in alloc etc
@@ -239,7 +245,7 @@ unsigned char *pbf_serialize(pbf_protobuf *pbf, int *length) {
     return out;
 }
 
-pbf_protobuf * pbf_load(char *data, uint64_t size) {
+pbf_protobuf * pbf_load(char *data, uint64_t size, char *stringmap, uint64_t maxstringid) {
     pbf_protobuf *pbf = (pbf_protobuf *)malloc(sizeof(pbf_protobuf));
 
     pbf->data = (unsigned char *)data; // assumed.. retention on behalf of caller
@@ -248,7 +254,7 @@ pbf_protobuf * pbf_load(char *data, uint64_t size) {
     pbf->max_mark = 0;
     pbf->marks = NULL;
 
-    pbf_scan(pbf);
+    pbf_scan(pbf, stringmap, maxstringid);
 
     if (!pbf->parsed) {
         pbf_free(pbf);
