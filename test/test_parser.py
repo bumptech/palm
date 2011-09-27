@@ -29,3 +29,21 @@ enum Baz {
         assert efields['ACK'] == 1
         assert efields['NACK'] == 2
 
+class TestBooleanDefaults(ParserFixture):
+    src = '''\
+message Bar {
+    optional bool lies = 1 [default = false];
+    optional bool damn_lies = 2 [default = true];
+}
+'''
+    
+    def test_parses_default_false_as_False(self):
+        msgname, (fields, subs, enums) = self.result[0]
+        req, type, name, default = fields[1]
+        assert default is False
+
+    def test_parses_default_true_as_True(self):
+        msgname, (fields, subs, enums) = self.result[0]
+        req, type, name, default = fields[2]
+        assert default is True
+    
