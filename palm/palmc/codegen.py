@@ -14,7 +14,7 @@ def gen_module(messages, imports, tlenums):
     global o
     pfx = ''
 
-    out('from palm.palm import ProtoBase, RepeatedSequence, ProtoValueError\n\n')
+    out('from palm.palm import ProtoBase, is_string, RepeatedSequence, ProtoValueError\n\n')
     for i in imports:
         out('from %s import *\n' % convert_proto_name(i))
 
@@ -64,10 +64,18 @@ class %s(ProtoBase):
         self._required = [%s]
         ProtoBase.__init__(self, _pbf_buf, **kw)
 
+    @classmethod
+    def _pbf_finalize(self):
+        for (s, f) in self._pbf_deferred_strings:
+            if is_string(s.pb_subtype):
+                self._pbf_strings.append(f)
+        del self._pbf_deferred_strings
+
     def fields(self):
         return ['%s']
 
     _pbf_strings = []
+    _pbf_deferred_strings = []
 
     def __str__(self):
         return '\\n'.join('%%s: %%s' %% (f, repr(getattr(self, '_get_%%s' %% f)())) for f in self.fields()
@@ -100,8 +108,9 @@ class %s(ProtoBase):
         write_field(name, scope, num, field, ns)
 
     out('''
+%s._pbf_finalize()
 TYPE_%s = %s
-''' % (name, name))
+''' % (name, name, name))
 
 def write_field_get(num, type, name, default, scope):
     if default is not None:
@@ -117,13 +126,10 @@ def write_field_get(num, type, name, default, scope):
 
 def write_field(cname, parent, num, field, parent_ns):
     req, type, name, default = field
-    is_str = False
     if hasattr(ProtoBase, 'TYPE_%s' % type):
         scope = 'ProtoBase.'
-        is_str = type == "bytes" or type == "string"
     elif type in parent_ns:
         scope = '%s.' % (cname if not parent else ".".join([parent, cname]))
-        is_str = parent_ns[type] == 'message'
     else:
         scope = ''
     if req == 'repeated':
@@ -203,11 +209,19 @@ def write_field(cname, parent, num, field, parent_ns):
     def %(name)s__type(self):
         return %(scope)sTYPE_%(type)s
 
-    %(stringblock)s
+    if hasattr(ProtoBase, 'TYPE_%(type)s'):
+        if is_string(ProtoBase.TYPE_%(type)s):
+            _pbf_strings.append(%(num)s)
+    elif is_string(TYPE_%(type)s):
+        _pbf_strings.append(%(num)s)
+    elif type(TYPE_%(type)s) is type:
+        assert issubclass(TYPE_%(type)s, RepeatedSequence)
+        _pbf_deferred_strings.append((TYPE_%(type)s, %(num)s))
+
 ''' % {
     'name':name, 
     'num':num, 
     'field_get':write_field_get(num, type, name, default, scope), 
     'type':type,
     'scope':scope,
-    'stringblock' : ('_pbf_strings.append(%s)' % num) if is_str else ''})
+    })

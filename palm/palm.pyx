@@ -487,3 +487,9 @@ cdef class RepeatedSequence(list):
         i = self.pb_subtype()
         self.append(i)
         return i
+
+def is_string(t):
+    if t in (ProtoBase.TYPE_string, ProtoBase.TYPE_bytes) or \
+    type(t) is type and issubclass(t, ProtoBase):
+        return True
+    return False
