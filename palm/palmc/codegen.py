@@ -14,7 +14,7 @@ def gen_module(messages, imports, tlenums):
     global o
     pfx = ''
 
-    out('from palm.palm import ProtoBase, is_string, RepeatedSequence, ProtoValueError\n\n')
+    out('from palm.palm import ProtoBase, is_string, RepeatedSequence, ProtoValueError\n\n_PB_type = type\n')
     for i in imports:
         out('from %s import *\n' % convert_proto_name(i))
 
@@ -214,7 +214,7 @@ def write_field(cname, parent, num, field, parent_ns):
             _pbf_strings.append(%(num)s)
     elif is_string(TYPE_%(type)s):
         _pbf_strings.append(%(num)s)
-    elif type(TYPE_%(type)s) is type:
+    elif _PB_type(TYPE_%(type)s) is _PB_type:
         assert issubclass(TYPE_%(type)s, RepeatedSequence)
         _pbf_deferred_strings.append((TYPE_%(type)s, %(num)s))
 
