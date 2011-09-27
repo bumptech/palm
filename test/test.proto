@@ -94,4 +94,7 @@ message Test { //Test Comment 1
     required sint32 req_c = 52;
 
     optional Secret secret = 53;
+
+    optional bool answer1 = 54 [default = true];
+    optional bool answer2 = 55 [default = false];
 }

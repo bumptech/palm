@@ -302,3 +302,11 @@ class TestProto(object):
         pb2.r_sha1 = pb1.r_sha1.copy()
 
         assert pb1.r_sha1 == pb2.r_sha1
+
+    def test_default_true_is_True(self):
+        pb = test_palm.Test()
+        assert pb.answer1 is True
+
+    def test_default_false_is_False(self):
+        pb = test_palm.Test()
+        assert pb.answer2 is False
