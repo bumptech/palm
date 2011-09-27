@@ -112,7 +112,7 @@ class ProtoProcessor(DispatchProcessor):
         if b == 'true':
             b = True
         elif b == 'false':
-            b = True
+            b = False
         return b
 
     def enum(self, (tag, start, stop, subtags), buffer):
