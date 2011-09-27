@@ -14,7 +14,7 @@ def gen_module(messages, imports, tlenums):
     global o
     pfx = ''
 
-    out('from palm.palm import ProtoBase, is_string, RepeatedSequence, ProtoValueError\n\n_PB_type = type\n')
+    out('from palm.palm import ProtoBase, is_string, RepeatedSequence, ProtoValueError\n\n_PB_type = type\n_PB_finalizers = []\n\n')
     for i in imports:
         out('from %s import *\n' % convert_proto_name(i))
 
@@ -23,6 +23,14 @@ def gen_module(messages, imports, tlenums):
 
     for n, (fields, subs, en) in messages:
         write_class(n, '', fields, subs, en)
+
+    out('''
+
+for cname in _PB_finalizers:
+    eval(cname)._pbf_finalize()
+
+del _PB_finalizers
+''')
 
     all = ''.join(o)
 
@@ -46,7 +54,6 @@ def write_enum(name, spec):
         out('''
 %s = %s\n''' % (cn, value))
     out('''
-
 TYPE_%s = ProtoBase.TYPE_int32
 '''
 % name)
@@ -65,17 +72,16 @@ class %s(ProtoBase):
         ProtoBase.__init__(self, _pbf_buf, **kw)
 
     @classmethod
-    def _pbf_finalize(self):
-        for (s, f) in self._pbf_deferred_strings:
-            if is_string(s.pb_subtype):
-                self._pbf_strings.append(f)
-        del self._pbf_deferred_strings
+    def _pbf_finalize(cls):
+        for c in cls._pbf_finalizers:
+            c(cls)
+        del cls._pbf_finalizers
 
     def fields(self):
         return ['%s']
 
     _pbf_strings = []
-    _pbf_deferred_strings = []
+    _pbf_finalizers = []
 
     def __str__(self):
         return '\\n'.join('%%s: %%s' %% (f, repr(getattr(self, '_get_%%s' %% f)())) for f in self.fields()
@@ -108,9 +114,9 @@ class %s(ProtoBase):
         write_field(name, scope, num, field, ns)
 
     out('''
-%s._pbf_finalize()
 TYPE_%s = %s
-''' % (name, name, name))
+_PB_finalizers.append('%s%s')
+''' % (name, name, scope + '.' if scope else '', name))
 
 def write_field_get(num, type, name, default, scope):
     if default is not None:
@@ -209,14 +215,15 @@ def write_field(cname, parent, num, field, parent_ns):
     def %(name)s__type(self):
         return %(scope)sTYPE_%(type)s
 
-    if hasattr(ProtoBase, 'TYPE_%(type)s'):
-        if is_string(ProtoBase.TYPE_%(type)s):
-            _pbf_strings.append(%(num)s)
-    elif is_string(TYPE_%(type)s):
-        _pbf_strings.append(%(num)s)
-    elif _PB_type(TYPE_%(type)s) is _PB_type:
-        assert issubclass(TYPE_%(type)s, RepeatedSequence)
-        _pbf_deferred_strings.append((TYPE_%(type)s, %(num)s))
+    def _finalize_%(name)s(cls):
+        if is_string(%(scopeclass)sTYPE_%(type)s):
+            cls._pbf_strings.append(%(num)s)
+        elif _PB_type(%(scopeclass)sTYPE_%(type)s) is _PB_type:
+            assert issubclass(%(scopeclass)sTYPE_%(type)s, RepeatedSequence)
+            if is_string(%(scopeclass)sTYPE_%(type)s.pb_subtype):
+                cls._pbf_strings.append(%(num)s)
+
+    _pbf_finalizers.append(_finalize_%(name)s)
 
 ''' % {
     'name':name, 
@@ -224,4 +231,5 @@ def write_field(cname, parent, num, field, parent_ns):
     'field_get':write_field_get(num, type, name, default, scope), 
     'type':type,
     'scope':scope,
+    'scopeclass': 'cls.' + scope.split('.', 1)[-1] if scope.startswith('self.') else scope,
     })
