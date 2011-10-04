@@ -59,7 +59,7 @@ static int pbf_ensure_space(pbf_protobuf *pbf, int max) {
     for (; mark < pbf->num_marks; mark++) {
         cur = &pbf->marks[mark];
         cur->exists = 0;
-        cur->last = cur;
+        cur->last = NULL; // sentinel.. no last on initial (non-slab) value
         cur->next = NULL;
         cur->slabs = NULL;
         cur->num_slabs = 0;
@@ -79,15 +79,17 @@ void pbf_remove(pbf_protobuf *pbf, uint64_t field_num) {
         return;
 
     pbf->marks[field_num].exists = 0;
-    pbf->marks[field_num].last = &(pbf->marks[field_num]);
+    pbf->marks[field_num].last = NULL;
 }
 
-static void pbf_add_slab(pbf_mark *head) {
+pbf_mark * pbf_add_slab(pbf_mark *head) {
     int i;
     assert(head->last->next == NULL);
     pbf_mark *cur;
     head->num_slabs++;
-    head->slabs = (pbf_mark **)realloc(head->slabs, head->num_slabs * sizeof(pbf_mark *));
+    assert(head->num_slabs <= NUM_SLABS); // fixed cap at 10M items in repeated right now
+    if (!head->slabs)
+        head->slabs = (pbf_mark **)malloc(NUM_SLABS * sizeof(pbf_mark *));
     pbf_mark *slab = head->slabs[head->num_slabs - 1] = (pbf_mark *)malloc(SLAB_SIZE * sizeof(pbf_mark));
     for (i=0; i < SLAB_SIZE; i++) {
         cur = slab + i;
@@ -98,10 +100,10 @@ static void pbf_add_slab(pbf_mark *head) {
         cur->num_slabs = 0;
     }
     slab[SLAB_SIZE - 1].next = NULL;
-    head->last->next = slab;
+    return slab;
 }
 
-static inline pbf_mark * pbf_get_mark_for_write(pbf_protobuf *pbf, 
+static inline pbf_mark * pbf_get_mark_for_write(pbf_protobuf *pbf,
     uint64_t field_num, uint64_t field_type, pbf_mark **rhead) {
     pbf_mark *cur, *head;
     int success;
@@ -113,21 +115,21 @@ static inline pbf_mark * pbf_get_mark_for_write(pbf_protobuf *pbf,
 
     if (field_num > pbf->max_mark)
         pbf->max_mark = field_num;
-    
+
     head = &pbf->marks[field_num];
-    cur = head->last;
+    cur = head->last ? head->last : head;
     if (cur->exists) {
         if (!cur->next) {
-            pbf_add_slab(head);
+            cur->next = pbf_add_slab(head);
         }
-        cur = head->last->next;
+        cur = cur->next;
+        head->last = cur;
     }
     cur->exists = 1;
     cur->ftype = field_type;
 
     *rhead = head;
 
-    head->last = cur;
     if (cur->next)
         cur->next->exists = 0;
 
@@ -211,7 +213,7 @@ unsigned char *pbf_serialize(pbf_protobuf *pbf, int *length) {
             cf++;
             while (1) {
                 size += mark->raw_len + mark->buf_len;
-                if (mark == head->last) break;
+                if (!head->last || mark == head->last) break;
                 mark = mark->next;
             }
         }
@@ -234,7 +236,7 @@ unsigned char *pbf_serialize(pbf_protobuf *pbf, int *length) {
                     memcpy(ptr, mark->raw, mark->raw_len);
                     ptr += mark->raw_len;
                 }
-                if (mark == head->last) break;
+                if (!head->last || mark == head->last) break;
                 mark = mark->next;
             }
         }
@@ -294,7 +296,7 @@ static inline pbf_mark * pbf_get_field_mark(pbf_protobuf *pbf,
     if (!cur->exists)
         return NULL;
 
-    return last ? cur->last : cur;
+    return (last && cur->last) ? cur->last : cur;
 }
 
 /***********************************************************************
@@ -330,7 +332,7 @@ int pbf_get_bytes_stream(pbf_protobuf *pbf, uint64_t field_num,
     while (1) {
         pbf_raw_get_bytes(cur, &v, &length);
         cb(v, length, passthrough);
-        if (cur == head->last) break;
+        if (!head->last || cur == head->last) break;
         cur = cur->next;
     }
 
@@ -369,7 +371,7 @@ int pbf_get_integer_stream(pbf_protobuf *pbf, uint64_t field_num,
     while (1) {
         pbf_get_raw_integer(cur, &v);
         cb(v, passthrough);
-        if (cur == head->last) break;
+        if (!head->last || cur == head->last) break;
         cur = cur->next;
     }
 }
@@ -442,7 +444,7 @@ int pbf_get_signed_integer_stream(pbf_protobuf *pbf,
     while (1) {
         pbf_get_raw_signed_integer(cur, p64, p32, use_zigzag);
         cb(i64, i32, passthrough);
-        if (cur == head->last) break;
+        if (!head->last || cur == head->last) break;
         cur = cur->next;
     }
 
@@ -529,7 +531,6 @@ int pbf_set_signed_integer(pbf_protobuf *pbf, uint64_t field_num,
     }
 
     cur->buf_len = ptr - cur->buf;
-    cur->last = cur;
 
     return 1;
 }

@@ -9,6 +9,7 @@ typedef enum {
 } pbf_field_type;
 
 #define SLAB_SIZE 1000
+#define NUM_SLABS 10000
 
 typedef struct pbf_mark {
     char exists;
