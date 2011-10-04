@@ -47,7 +47,7 @@ int read_varint_value(unsigned char **ptr, uint64_t *result, int *iters,
     return 1;
 }
 
-static int pbf_ensure_space(pbf_protobuf *pbf, int max) {
+static int pbf_ensure_space(pbf_protobuf *pbf, uint64_t max) {
     if (max > 100000)
         return 0; // refuse to allocate this much ram
 
@@ -107,6 +107,9 @@ static inline pbf_mark * pbf_get_mark_for_write(pbf_protobuf *pbf,
     uint64_t field_num, uint64_t field_type, pbf_mark **rhead) {
     pbf_mark *cur, *head;
     int success;
+
+    if (field_num <= 0)
+        return NULL;
 
     if (field_num >= pbf->num_marks) {
         success = pbf_ensure_space(pbf, field_num);
@@ -289,7 +292,7 @@ static inline pbf_mark * pbf_get_field_mark(pbf_protobuf *pbf,
         uint64_t field_num,
         int last) {
     
-    if (field_num < 0 || field_num > pbf->max_mark)
+    if (field_num <= 0 || field_num > pbf->max_mark)
         return NULL;
 
     pbf_mark *cur = &pbf->marks[field_num];
