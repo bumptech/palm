@@ -26,11 +26,14 @@ Palm:
 Status
 ------
 
-It is currently pre-alpha quality.  Don't use it for anything serious yet!
-Pull requests welcome!  See the TODO.
+It is currently beta quality.  It is used in production, but its
+production use is young.
+
+Pull requests welcome!
 
 Authors
 -------
 
     Jamie Turner <jamie@bu.mp>  @jamwt
     Will Moss <wmoss@bu.mp> @wbmoss
+    Christian Wyglendowski <christian@bu.mp> @dowskimania
