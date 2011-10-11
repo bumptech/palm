@@ -339,10 +339,11 @@ cdef class ProtoBase:
             free(self.stringmap)
 
 
-    def dumps(self):
-        for fnum in self._required:
-            if not pbf_exists(self.buf, fnum) and fnum not in self._mods:
-                raise ProtoRequiredFieldMissing(getattr(self, '_pb_field_name_%i' % fnum))
+    def dumps(self, partial=False):
+        if not partial:
+            for fnum in self._required:
+                if not pbf_exists(self.buf, fnum) and fnum not in self._mods:
+                    raise ProtoRequiredFieldMissing(getattr(self, '_pb_field_name_%i' % fnum))
         if not self._evermod:
             return self._data
         self._save()

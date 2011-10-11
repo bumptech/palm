@@ -247,12 +247,15 @@ class TestProto(object):
         pb = self.get_proto()
         new = test_palm.Test(pb.SerializeToString())
         del new.req_a
+        pb.ClearField('req_a')
         try:
             new.dumps()
         except ProtoRequiredFieldMissing:
             pass
         else:
             assert False, "Missing required field not caught"
+
+        assert new.dumps(partial=True) == pb.SerializePartialToString()
 
     def test_contains_support_works(self):
         pb = test_palm.Test(a=1, b=2, r="test")
