@@ -313,3 +313,7 @@ class TestProto(object):
     def test_default_false_is_False(self):
         pb = test_palm.Test()
         assert pb.answer2 is False
+
+    def test_get(self):
+        pb = test_palm.Test()
+        assert pb.get('sha1', 'Test') == 'Test'

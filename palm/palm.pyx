@@ -442,6 +442,9 @@ cdef class ProtoBase:
     def copy(self):
         return self.__class__(self.dumps())
 
+    def get(self, field, default=None):
+        return getattr(self, field) if getattr(self, field + '__exists') else default
+
 cdef class RepeatedSequence(list):
     pb_subtype = None
     def __init__(self, *args, **kw):
