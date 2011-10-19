@@ -21,7 +21,7 @@ def runpalm():
     p = FTest(b)
     for x in xrange(10000):
         p.a = x
-        p.dumps(update=True)
+        p.dumps()
     print 'Palm, 10,000 encodes:', time.time() - t
 
 if not sys.argv[1:] or 'prof' in sys.argv[1:] or 'palm' in sys.argv[1:]:
