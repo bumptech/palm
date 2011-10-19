@@ -59,10 +59,11 @@ static int pbf_ensure_space(pbf_protobuf *pbf, uint64_t max) {
     for (; mark < pbf->num_marks; mark++) {
         cur = &pbf->marks[mark];
         cur->exists = 0;
-        cur->last = NULL; // sentinel.. no last on initial (non-slab) value
+        cur->last = NULL; // sentinel.. no last on initial (no repeated)
         cur->next = NULL;
-        cur->slabs = NULL;
-        cur->num_slabs = 0;
+        cur->repeats = NULL;
+        cur->repeated_alloc = 0;
+        cur->repeated_used = 0;
     }
 
     return 1;
@@ -80,27 +81,29 @@ void pbf_remove(pbf_protobuf *pbf, uint64_t field_num) {
 
     pbf->marks[field_num].exists = 0;
     pbf->marks[field_num].last = NULL;
+    pbf->marks[field_num].repeated_used = 0;
 }
 
-pbf_mark * pbf_add_slab(pbf_mark *head) {
+void pbf_add_slab(pbf_mark *head) {
+    /* Create/grow repeated allocation */
     int i;
-    assert(head->last->next == NULL);
     pbf_mark *cur;
-    head->num_slabs++;
-    assert(head->num_slabs <= NUM_SLABS); // fixed cap at 10M items in repeated right now
-    if (!head->slabs)
-        head->slabs = (pbf_mark **)malloc(NUM_SLABS * sizeof(pbf_mark *));
-    pbf_mark *slab = head->slabs[head->num_slabs - 1] = (pbf_mark *)malloc(SLAB_SIZE * sizeof(pbf_mark));
-    for (i=0; i < SLAB_SIZE; i++) {
-        cur = slab + i;
-        cur->exists = 0;
-        cur->last = NULL;
-        cur->next = slab + (i + 1);
-        cur->slabs = NULL;
-        cur->num_slabs = 0;
+    if (head->repeated_alloc == 0)
+        head->repeated_alloc = 1;
+    head->repeated_alloc *= REPEATED_MULTIPLE;
+
+    assert(head->repeated_alloc <= REPEATED_HARD_CAP);
+    head->repeats = (pbf_mark *)realloc(head->repeats, head->repeated_alloc * sizeof(pbf_mark));
+
+    // start at _new_ records
+    for (i = 0; i < head->repeated_alloc; i++) {
+        cur = head->repeats + i;
+        cur->next = head->repeats + (i + 1);
+        if (i >= head->repeated_used)
+            cur->exists = 0;
     }
-    slab[SLAB_SIZE - 1].next = NULL;
-    return slab;
+    cur->next = NULL;
+    head->next = head->repeats;
 }
 
 static inline pbf_mark * pbf_get_mark_for_write(pbf_protobuf *pbf,
@@ -122,19 +125,17 @@ static inline pbf_mark * pbf_get_mark_for_write(pbf_protobuf *pbf,
     head = &pbf->marks[field_num];
     cur = head->last ? head->last : head;
     if (cur->exists) {
-        if (!cur->next) {
-            cur->next = pbf_add_slab(head);
+        if (head->repeated_used == head->repeated_alloc) {
+            pbf_add_slab(head);
         }
-        cur = cur->next;
+        cur = head->repeats + head->repeated_used;
+        head->repeated_used++;
         head->last = cur;
     }
     cur->exists = 1;
     cur->ftype = field_type;
 
     *rhead = head;
-
-    if (cur->next)
-        cur->next->exists = 0;
 
     return cur;
 }
@@ -163,6 +164,7 @@ static void pbf_scan (pbf_protobuf *pbf, char* stringmap, int maxstringid) {
                  (field_type != pbf_type_length && stringmap[field_num])))
             return;
 
+        //printf("%lu\n", field_num);
         cur = pbf_get_mark_for_write(pbf, field_num, field_type, &head);
         if (!cur) return; // something failed in alloc etc
 
@@ -192,6 +194,9 @@ static void pbf_scan (pbf_protobuf *pbf, char* stringmap, int maxstringid) {
             default: // unknown type
                 return;
         }
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        //printf("%lu %u\n", field_num, tv.tv_usec);
         if (ptr > limit)
             return; // overflow on string length, etc
         cur->raw_len = ptr - cur->raw;
@@ -229,7 +234,7 @@ unsigned char *pbf_serialize(pbf_protobuf *pbf, int *length) {
 
     for(cf=fields; *cf != 0; cf++) {
         head = mark = &pbf->marks[*cf];
-        if (mark->exists) {
+        if (head->exists) {
             while (1) {
                 if (mark->buf_len) {
                     memcpy(ptr, mark->buf, mark->buf_len);
@@ -276,11 +281,8 @@ void pbf_free(pbf_protobuf *pbf) {
     /* free repeated slabs */
     for (i=1; i <= pbf->max_mark; i++) {
         cur = &pbf->marks[i];
-        if (cur->num_slabs) {
-            for (j=0; j< cur->num_slabs; j++)
-                free(cur->slabs[j]);
-            free(cur->slabs);
-        }
+        if (cur->repeats)
+            free(cur->repeats);
     }
 
     if (pbf->marks)

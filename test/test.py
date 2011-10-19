@@ -71,7 +71,7 @@ class TestProto(object):
 
         pb.r_sha1.extend(["three", "blind", "mice"])
 
-        pb.r_a.extend([8, 5, 0])
+        pb.r_a.extend(range(500)) # 500 length meaningful for repeat alloc resize!
         pb.r_b.extend([-8, 5, 0])
         pb.r_c.extend([-8, 5, 0])
 
@@ -117,7 +117,7 @@ class TestProto(object):
             assert cmp(getattr(pb, f), getattr(new, f))
             getattr(new, '_mod_%s' % f)()
 
-        renew = test_palm.Test(new.dumps())
+        renew = test_palm.Test(new.dumps(update=True))
 
         for f in fields:
             assert cmp(getattr(pb, f), getattr(renew, f))

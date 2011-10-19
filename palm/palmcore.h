@@ -8,8 +8,8 @@ typedef enum {
     pbf_type_fixed32 = 5
 } pbf_field_type;
 
-#define SLAB_SIZE 1000
-#define NUM_SLABS 10000
+#define REPEATED_MULTIPLE 64
+#define REPEATED_HARD_CAP (64 * 64 * 64 * 64)
 
 typedef struct pbf_mark {
     char exists;
@@ -28,8 +28,9 @@ typedef struct pbf_mark {
     unsigned char buf_len; // copy if nonzero
     struct pbf_mark *last;
     struct pbf_mark *next;
-    struct pbf_mark **slabs;
-    uint32_t num_slabs;
+    struct pbf_mark *repeats;
+    uint32_t repeated_alloc;
+    uint32_t repeated_used;
 } pbf_mark;
 
 typedef struct pbf_protobuf {

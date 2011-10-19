@@ -242,6 +242,8 @@ cdef class ProtoBase:
         return t
 
     def _buf_get(self, field, typ, name):
+        if self.buf == NULL:
+            raise RuntimeError("instance was fast-serialized; cannot use any longer!")
         if type(typ) is not int:
             if issubclass (typ, ProtoBase):
                 return self._get_submessage(field, typ, name)
@@ -326,10 +328,14 @@ cdef class ProtoBase:
 
     def _buf_exists(self, field):
         cdef int e
+        if self.buf == NULL:
+            raise RuntimeError("instance was fast-serialized; cannot use any longer!")
         e = pbf_exists(self.buf, field)
         return bool(e)
 
     def _buf_del(self, field):
+        if self.buf == NULL:
+            raise RuntimeError("instance was fast-serialized; cannot use any longer!")
         pbf_remove(self.buf, field)
 
     def __dealloc__(self):
@@ -339,16 +345,26 @@ cdef class ProtoBase:
             free(self.stringmap)
 
 
-    def dumps(self, partial=False):
+    def dumps(self, partial=False, update=False):
         if not partial:
+            if self.buf == NULL:
+                raise RuntimeError("instance was fast-serialized; cannot use any longer!")
             for fnum in self._required:
                 if not pbf_exists(self.buf, fnum) and fnum not in self._mods:
                     raise ProtoRequiredFieldMissing(getattr(self, '_pb_field_name_%i' % fnum))
         if not self._evermod:
             return self._data
+
+        if self.buf == NULL:
+            raise RuntimeError("instance was fast-serialized; cannot use any longer!")
+
         self._save()
         o = self._serialize()
-        self._pb_init(o)
+        if update:
+            self._pb_init(o)
+        else:
+            pbf_free(self.buf)
+            self.buf = NULL
         return o
 
     cdef _save_item(self, f, ctyp, v):
@@ -402,6 +418,8 @@ cdef class ProtoBase:
 
     def _save(self):
         cdef int ctyp
+        if self.buf == NULL:
+            raise RuntimeError("instance was fast-serialized; cannot use any longer!")
 
         for f, v in self._cache.iteritems():
             assert 0 < f <= 100000, "Field id must be 1..100000 in palm"
@@ -434,13 +452,15 @@ cdef class ProtoBase:
     def _serialize(self):
         cdef unsigned char *cout
         cdef int length
+        if self.buf == NULL:
+            raise RuntimeError("instance was fast-serialized; cannot use any longer!")
         cout = pbf_serialize(self.buf, &length)
         pyout = cout[:length]
         free(cout)
         return pyout
 
     def copy(self):
-        return self.__class__(self.dumps())
+        return self.__class__(self.dumps(partial=True, update=True))
 
     def get(self, field, default=None):
         return getattr(self, field) if getattr(self, field + '__exists') else default
