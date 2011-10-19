@@ -1,3 +1,7 @@
+# Run this _after_ running test suite
+import sys
+sys.path.insert(0, '..')
+
 import timeit
 import time
 import cProfile as profiler
