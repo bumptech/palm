@@ -5,23 +5,15 @@ This is a lightweight, fast library for using Google's protobufs in Python.
 
 How fast?
 
-Google pure-python version:
+    Palm, 10,000 decodes: 0.224280118942
+    Palm, 10,000 encodes: 0.0757548809052
 
-    In [23]: %timeit t.ParseFromString(e)
-    10000 loops, best of 3: 54.8 us per loop
+    ------------------------------------------------------------------------
 
-    In [24]: %timeit t.SerializeToString()
-    10000 loops, best of 3: 65.3 us per loop
+    PB, 10,000 decodes: 5.67175507545
+    PB, 10,000 encodes: 3.88449811935
 
-Palm:
-
-    In [25]: t = Test(e)
-
-    In [26]: %timeit Test(e)
-    100000 loops, best of 3: 3.54 us per loop
-
-    In [27]: %timeit t.dumps()
-    1000000 loops, best of 3: 1.64 us per loop
+(See the benchmark script in tests/bench/bench.py)
 
 Status
 ------
@@ -37,3 +29,4 @@ Authors
     Jamie Turner <jamie@bu.mp>  @jamwt
     Will Moss <wmoss@bu.mp> @wbmoss
     Christian Wyglendowski <christian@bu.mp> @dowskimania
+    .. and, generally, the http://bu.mp server team
