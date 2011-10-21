@@ -197,7 +197,7 @@ def write_field(cname, parent, num, field, parent_ns):
             del self._mods[%(num)s]
         self._buf_del(%(num)s)
 
-    _pb_field_name_%(num)d = "%(num)s"
+    _pb_field_name_%(num)d = "%(name)s"
 
     %(name)s = property(_get_%(name)s, _set_%(name)s, _del_%(name)s)
 

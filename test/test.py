@@ -317,3 +317,14 @@ class TestProto(object):
     def test_get(self):
         pb = test_palm.Test()
         assert pb.get('sha1', 'Test') == 'Test'
+
+    def test_field_number_and_name_in_exceptions(self):
+        pb = test_palm.Test()
+        try:
+            pb.dumps()
+        except ProtoRequiredFieldMissing, e:
+            assert e.args[0] == 50, e.args
+            assert e.args[1] == 'req_a', e.args
+        else:
+            assert 0, "DID NOT RAISE"
+

@@ -343,7 +343,7 @@ cdef class ProtoBase:
         if not partial:
             for fnum in self._required:
                 if not pbf_exists(self.buf, fnum) and fnum not in self._mods:
-                    raise ProtoRequiredFieldMissing(getattr(self, '_pb_field_name_%i' % fnum))
+                    raise ProtoRequiredFieldMissing(fnum, getattr(self, '_pb_field_name_%i' % fnum))
         if not self._evermod:
             return self._data
 
