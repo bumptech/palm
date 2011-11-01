@@ -328,3 +328,6 @@ class TestProto(object):
         else:
             assert 0, "DID NOT RAISE"
 
+    def test_can_get_a_field_number_from_a_field_name(self):
+        pb = test_palm.Test()
+        assert pb.get_field_number('req_a') == 50

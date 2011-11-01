@@ -448,6 +448,9 @@ cdef class ProtoBase:
     def get(self, field, default=None):
         return getattr(self, field) if getattr(self, field + '__exists') else default
 
+    def get_field_number(self, name):
+        return self._field_map[name]
+
 cdef class RepeatedSequence(list):
     pb_subtype = None
     def __init__(self, *args, **kw):

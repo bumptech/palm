@@ -69,6 +69,7 @@ class %s(ProtoBase):
         self._cache = {}
         self._pbf_establish_parent_callback = None
         self._required = [%s]
+        self._field_map = %r
         ProtoBase.__init__(self, _pbf_buf, **kw)
 
     @classmethod
@@ -88,6 +89,7 @@ class %s(ProtoBase):
                           if getattr(self, '%%s__exists' %% f))
 ''' % (name,
        ", ".join(str(num) for num, (req, _, _, _) in fields.iteritems() if req == 'required'),
+       dict((name, num) for num, (_, _, name, _) in fields.iteritems()),
        "', '".join(name for _, _, name, _ in fields.values())))
 
     ns = {}
