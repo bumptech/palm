@@ -1,3 +1,5 @@
+import operator
+
 ctypedef int int32_t
 ctypedef long long int64_t
 ctypedef unsigned int uint32_t
@@ -450,6 +452,30 @@ cdef class ProtoBase:
 
     def get_field_number(self, name):
         return self._field_map[name]
+
+    def __richcmp__(self, other, op):
+        EQ, NE = (2, 3)
+        cmp_op = {EQ:operator.eq, NE:operator.ne}[op]
+        if op not in  [EQ, NE]: # Cython == and != comparison
+            return NotImplemented
+
+        if not isinstance(other, ProtoBase):
+            return op == NE # True if != comparison, else False
+
+        # NOTE It would be nice to be able to compare the byte representations
+        # like below but it sounds like different protobuf libraries might
+        # serialize the data somewhat differently, so that would be unsafe.
+        ##if not any([self._evermod, other._evermod]):
+        ##    return cmp_op(self._data, other._data)
+
+        if self.fields() != other.fields():
+            return op == EQ # True if == comparison, else False
+        for field in self.fields():
+            v1 = self.get(field)
+            v2 = other.get(field)
+            if v1 != v2:
+                return op != EQ # False if == comparison, else True
+        return op == EQ # True if == comparison, else False
 
 cdef class RepeatedSequence(list):
     pb_subtype = None

@@ -331,3 +331,68 @@ class TestProto(object):
     def test_can_get_a_field_number_from_a_field_name(self):
         pb = test_palm.Test()
         assert pb.get_field_number('req_a') == 50
+
+    def test_equal_fresh_protobufs_compare_equally(self):
+        pb1 = test_palm.Test(req_a=1, req_b=2, req_c=3)
+        pb2 = test_palm.Test(req_a=1, req_b=2, req_c=3)
+        assert pb1 == pb2
+
+    def test_unequal_fresh_protobufs_compare_unequally(self):
+        pb1 = test_palm.Test(req_a=1, req_b=2, req_c=3)
+        pb2 = test_palm.Test(req_a=4, req_b=5, req_c=6)
+        assert pb1 != pb2
+
+    def test_equal_loaded_protobufs_compare_equally(self):
+        data = test_palm.Test(req_a=1, req_b=2, req_c=3).dumps()
+        pb1 = test_palm.Test(data)
+        pb2 = test_palm.Test(data)
+        assert pb1 == pb2
+
+    def test_unequal_loaded_protobufs_compare_unequally(self):
+        data1 = test_palm.Test(req_a=1, req_b=2, req_c=3).dumps()
+        data2 = test_palm.Test(req_a=4, req_b=5, req_c=6).dumps()
+        pb1 = test_palm.Test(data1)
+        pb2 = test_palm.Test(data2)
+        assert pb1 != pb2
+
+    def test_equal_fresh_and_loaded_protobufs_compare_equally(self):
+        pb1 = test_palm.Test(req_a=1, req_b=2, req_c=3)
+        pb2 = test_palm.Test(pb1.dumps())
+        assert pb1 == pb2
+
+    def test_equal_complex_protobufs_compare_equally(self):
+        pb1 = test_palm.Test()
+        pb1.msg = pb1.Foo()
+        pb1.msg.flop = pb1.msg.Flop(desc='hhhhaaa')
+        pb1.r_msg.append(pb1.Foo(flop=pb1.Foo.Flop(desc="yaar!")))
+
+        pb2 = test_palm.Test()
+        pb2.msg = pb2.Foo()
+        pb2.msg.flop = pb2.msg.Flop(desc='hhhhaaa')
+        pb2.r_msg.append(pb2.Foo(flop=pb2.Foo.Flop(desc="yaar!")))
+
+        assert pb1 == pb2
+
+    def test_unequal_complex_protobufs_compare_unequally(self):
+        pb1 = test_palm.Test()
+        pb1.msg = pb1.Foo()
+        pb1.msg.flop = pb1.msg.Flop(desc='hhhhaaa')
+        pb1.r_msg.append(pb1.Foo(flop=pb1.Foo.Flop(desc="yaar!")))
+
+        pb2 = test_palm.Test()
+        pb2.msg = pb2.Foo()
+        pb2.msg.flop = pb2.msg.Flop(desc='hhhhaaa')
+        pb2.r_msg.append(pb2.Foo(flop=pb2.Foo.Flop(desc="yaar!")))
+        pb2.r_msg.append(pb2.Foo(flop=pb2.Foo.Flop(desc="yaar?")))
+
+        assert pb1 != pb2
+
+    def test_can_test_for_membership_in_repeated(self):
+        pb1 = test_palm.Test()
+        pb1.r_msg.append(pb1.Foo(flop=pb1.Foo.Flop(desc="yaar!")))
+        assert pb1.Foo(flop=pb1.Foo.Flop(desc="yaar!")) in pb1.r_msg
+        assert pb1.Foo(flop=pb1.Foo.Flop(desc="yaar?")) not in pb1.r_msg
+
+    def test_non_pb_objects_compare_unqually_with_pbs(self):
+        assert "a" != test_palm.Test()
+
