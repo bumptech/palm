@@ -1,5 +1,3 @@
-import operator
-
 ctypedef int int32_t
 ctypedef long long int64_t
 ctypedef unsigned int uint32_t
@@ -455,7 +453,6 @@ cdef class ProtoBase:
 
     def __richcmp__(self, other, op):
         EQ, NE = (2, 3)
-        cmp_op = {EQ:operator.eq, NE:operator.ne}[op]
         if op not in  [EQ, NE]: # Cython == and != comparison
             return NotImplemented
 
@@ -465,6 +462,7 @@ cdef class ProtoBase:
         # NOTE It would be nice to be able to compare the byte representations
         # like below but it sounds like different protobuf libraries might
         # serialize the data somewhat differently, so that would be unsafe.
+        ##cmp_op = {EQ:operator.eq, NE:operator.ne}[op]
         ##if not any([self._evermod, other._evermod]):
         ##    return cmp_op(self._data, other._data)
 
