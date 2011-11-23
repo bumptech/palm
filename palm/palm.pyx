@@ -522,6 +522,13 @@ cdef class RepeatedSequence(list):
         self.append(i)
         return i
 
+    def clear(self):
+        del self[:]
+
+    def set(self, l):
+        self.clear()
+        self.extend(l)
+
 def is_string(t):
     if t in (ProtoBase.TYPE_string, ProtoBase.TYPE_bytes) or \
     type(t) is type and issubclass(t, ProtoBase):
