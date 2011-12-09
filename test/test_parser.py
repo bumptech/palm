@@ -10,6 +10,8 @@ class ParserFixture(object):
 
 class TestProperEnumOrder(ParserFixture):
     src = '''\
+package com.foo.bar;
+
 message Foo {
     optional string bar = 1;
 }
