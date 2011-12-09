@@ -4,3 +4,4 @@ palm/palm.so
 *.pyc
 palm.egg-info/
 dist/
+.noseids
