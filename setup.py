@@ -1,16 +1,12 @@
-import sys
-sys.path.insert(0, "fake_pyrex")
-from Cython.Distutils import build_ext
-from setuptools import setup, Extension, find_packages
+from setuptools import setup, Extension
 
-sourcefiles = ["palm/palm.pyx", "palm/palmcore.c"]
+sourcefiles = ["palm/palm.c", "palm/palmcore.c"]
 
 setup(
         name="palm",
-        version="0.1b",
-        cmdclass = {'build_ext' : build_ext},
-        packages=["palm", "palm.palmc",],
-        ext_modules = [Extension("palm.palm", sourcefiles, extra_compile_args=['-g'])],
+        version="0.1.1",
+        packages=["palm", "palm.palmc", ],
+        ext_modules=[Extension("palm.palm", sources=sourcefiles)],
         install_requires=["simpleparse >=2.1"],
         entry_points='''
         [console_scripts]
