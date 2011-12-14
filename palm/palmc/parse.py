@@ -4,9 +4,10 @@ from simpleparse.dispatchprocessor import DispatchProcessor, dispatch, dispatchL
 protofile = r'''
 root                    := whitespace*, message_or_import+
 <whitespace>            := comment / [ \t\n]
-comment                 := one_line_comment / multi_line_comment
+comment                 := one_line_comment / multi_line_comment / package
 one_line_comment        := "//", -"\n"*
 multi_line_comment      := "/*", -"*/"*, "*/"
+package                 := "package", whitespace+, [a-zA-Z], [a-zA-Z0-9_.]*, ";"!, whitespace*
 >message_or_import<     := message / enum / import / option
 message                 := message_start, message_label!, whitespace*, message_body, whitespace*
 <message_start>         := "message", whitespace+
