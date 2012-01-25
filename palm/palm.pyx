@@ -160,7 +160,7 @@ cdef class ProtoBase:
 
         if (self.buf == NULL):
             self._data = None
-            raise ProtoDataError("Invalid or unsupported protobuf data for this message")
+            raise ProtoDataError("Invalid or unsupported protobuf data for message " + str(self.__class__))
         self._evermod = False
         self._retains = []
         self._mods = {}
