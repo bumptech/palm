@@ -159,7 +159,7 @@ static void pbf_scan (pbf_protobuf *pbf, char* stringmap, int maxstringid) {
         field_type = key & 7;
 
         // validate things that should be bytestrings are indeed, and vice-versa
-        if (field_num <= maxstringid && 
+        if (field_num > 0 && field_num <= maxstringid &&
                 ((field_type == pbf_type_length && !stringmap[field_num]) ||
                  (field_type != pbf_type_length && stringmap[field_num])))
             return;
