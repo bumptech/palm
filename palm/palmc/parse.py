@@ -105,6 +105,8 @@ class ProtoProcessor(DispatchProcessor):
         if len(res) == 4:
             res.append(None)
         req,typ,name,num,default = res
+        assert num not in self.messages[self.current_message][0], \
+               'Duplicate field number %s in %s' % (num, self.current_message.split('-')[1])
         self.messages[self.current_message][0][num] = req,typ,name,default
 
     def field_default(self, (tag, start, stop, subtags), buffer):

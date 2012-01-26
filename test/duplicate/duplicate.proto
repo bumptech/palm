@@ -1,0 +1,4 @@
+message HasDuplicates {
+    required string a = 1;
+    required string b = 1;
+}

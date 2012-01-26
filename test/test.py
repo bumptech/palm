@@ -1,5 +1,5 @@
 from subprocess import Popen, PIPE
-from os.path import dirname, abspath
+from os.path import dirname, abspath, join
 import operator as op
 
 from palm.palm import ProtoRequiredFieldMissing, ProtoValueError
@@ -13,11 +13,16 @@ root = dirname(abspath(__file__))
 run('protoc --python_out=%s -I%s %s/test.proto %s/foo.proto' % (root, root, root, root))
 run('palmc %s %s' % (root, root))
 
-
 import py.test
 
 import test_palm
 import test_pb2
+
+class TestPalmc(object):
+    def test_duplicate(self):
+        duplicate_root = join(root, 'duplicate')
+        assert Popen('palmc %s %s' % (duplicate_root, duplicate_root), shell=True, stdout=PIPE, stderr=PIPE).wait() == 1, \
+               'Duplicate field numbers not caught'
 
 def approx_list_match(l1, l2):
     for i1, i2 in zip(l1, l2):
