@@ -9,6 +9,7 @@ def run():
     assert len(sys.argv) == 3, "exactly two arguments required: path to directory with .proto files and path to destination package"
     d = sys.argv[1]
     od = sys.argv[2]
+    exit_status = 0
 
     protos = [f for f in os.listdir(d) if f.endswith(".proto")]
 
@@ -27,7 +28,7 @@ def run():
                 raise SyntaxError("Syntax error on line %s near %r" % (
                     source[:l].count('\n') + 1,
                     source[l:l+10]))
-            s = gen_module([m for m in res if type(m) is tuple], 
+            s = gen_module([m for m in res if type(m) is tuple],
                     [m for m in res if type(m) is str],
                     [m for m in res if type(m) is list],
                     )
@@ -36,6 +37,9 @@ def run():
             sys.stdout.write("[FAIL]\n")
             sys.stdout.flush()
             traceback.print_exc()
+            exit_status = 1
         else:
             sys.stdout.write("[OKAY]\n")
             sys.stdout.flush()
+
+    return exit_status
