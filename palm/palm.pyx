@@ -467,7 +467,7 @@ cdef class ProtoBase:
         ##    return cmp_op(self._data, other._data)
 
         if self.fields() != other.fields():
-            return op == EQ # True if == comparison, else False
+            return op == NE # True if != comparison, else False
         for field in self.fields():
             v1 = self.get(field)
             v2 = other.get(field)
