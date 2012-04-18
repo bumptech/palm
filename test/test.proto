@@ -97,4 +97,6 @@ message Test { //Test Comment 1
 
     optional bool answer1 = 54 [default = true];
     optional bool answer2 = 55 [default = false];
+
+    repeated Secret r_secret = 56;
 }
