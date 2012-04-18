@@ -154,13 +154,17 @@ def write_field(cname, parent, num, field, parent_ns):
 
 ''' % (name, scope, type, name, name))
         type = 'Repeated_%s' % name
+        custom_subtype = scope != 'ProtoBase.'
         scope = 'self.'
-        out(
+        if custom_subtype:
+            out(
 '''
     @property
     def %s__stream(self):
         return self._get_repeated(%s, self.TYPE_%s, "%s", lazy=True)
 ''' % (name, num, type, name))
+
+    # Back to all fields...
     out(
 '''
     def _get_%(name)s(self):
