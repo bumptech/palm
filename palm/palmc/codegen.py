@@ -151,9 +151,16 @@ def write_field(cname, parent, num, field, parent_ns):
 
 
     TYPE_Repeated_%s = Repeated_%s
+
 ''' % (name, scope, type, name, name))
         type = 'Repeated_%s' % name
         scope = 'self.'
+        out(
+'''
+    @property
+    def %s__stream(self):
+        return self._get_repeated(%s, self.TYPE_%s, "%s", lazy=True)
+''' % (name, num, type, name))
     out(
 '''
     def _get_%(name)s(self):

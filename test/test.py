@@ -401,3 +401,12 @@ class TestProto(object):
     def test_non_pb_objects_compare_unqually_with_pbs(self):
         assert "a" != test_palm.Test()
 
+
+    def test_stream_equivalence(self):
+        pb1 = test_palm.Test(req_a=1, req_b=2, req_c=3)
+        pb2 = pb1.copy()
+        
+        for (i1, i2) in zip(pb1.r_sha1, pb2.r_sha1__stream):
+            assert (i1 == i2)
+
+        assert list(pb1.r_sha1) == list(pb2.r_sha1__stream)

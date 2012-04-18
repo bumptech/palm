@@ -1,3 +1,5 @@
+from functools import partial
+
 ctypedef int int32_t
 ctypedef long long int64_t
 ctypedef unsigned int uint32_t
@@ -178,7 +180,7 @@ cdef class ProtoBase:
         inst = typ(bout, getattr(self, '_mod_%s' % name))
         return inst
 
-    def _get_repeated(self, field, typ, name):
+    def _get_repeated(self, field, typ, name, lazy=False):
         cdef int ctyp
 
         l = []
@@ -189,7 +191,10 @@ cdef class ProtoBase:
                     byte_byte_cb, <void *>sl)
             mod = getattr(self, '_mod_%s' % name)
             for i in sl:
-                l.append(typ.pb_subtype(i, _pbf_parent_callback=mod))
+                if lazy:
+                    l.append(partial(typ.pb_subtype, i, _pbf_parent_callback=mod))
+                else:
+                    l.append(typ.pb_subtype(i, _pbf_parent_callback=mod))
 
         else:
             ctyp = typ.pb_subtype
