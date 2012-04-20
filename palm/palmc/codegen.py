@@ -78,7 +78,8 @@ class %s(ProtoBase):
             c(cls)
         del cls._pbf_finalizers
 
-    def fields(self):
+    @classmethod
+    def fields(cls):
         return ['%s']
 
     _pbf_strings = []
