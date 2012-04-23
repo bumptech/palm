@@ -82,6 +82,9 @@ class %s(ProtoBase):
     def fields(cls):
         return ['%s']
 
+    def modified(self):
+        return self._evermod
+
     _pbf_strings = []
     _pbf_finalizers = []
 
