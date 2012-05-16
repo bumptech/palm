@@ -83,7 +83,7 @@ cdef void unsigned_bool_get(uint64_t u64, void * ar):
     b = bool(u64)
     (<object>ar).append(b)
 
-cdef class ProtoBase:
+cdef class ProtoBase(object):
     (TYPE_string,
      TYPE_bytes,
      TYPE_int32,
