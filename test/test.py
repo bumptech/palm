@@ -412,3 +412,9 @@ class TestProto(object):
             assert i1 == i2()
 
         assert list(pb1.r_secret) == map(apply, pb2.r_secret__stream)
+
+    def test_accessing_a_repeated_doesnt_mark_parent_as_modified(self):
+        pb1 = test_palm.Test()
+        assert not pb1.modified()
+        pb1.r_secret
+        assert not pb1.modified()
