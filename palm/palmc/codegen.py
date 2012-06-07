@@ -64,7 +64,7 @@ def write_class(name, scope, fields, subs, enums):
     out(
 '''
 class %s(ProtoBase):
-    def __init__(self, _pbf_buf='', _pbf_parent_callback=None, **kw): 
+    def __init__(self, _pbf_buf='', _pbf_parent_callback=None, **kw):
         self._pbf_parent_callback = _pbf_parent_callback
         self._cache = {}
         self._pbf_establish_parent_callback = None
@@ -147,7 +147,7 @@ def write_field(cname, parent, num, field, parent_ns):
     if req == 'repeated':
         out(
 '''
-    class Repeated_%s(RepeatedSequence): 
+    class Repeated_%s(RepeatedSequence):
         class pb_subtype(object):
             def __get__(self, instance, cls):
                 return %sTYPE_%s
@@ -186,8 +186,8 @@ def write_field(cname, parent, num, field, parent_ns):
                 v._pbf_parent_callback = self._mod_%(name)s
                 v._pbf_establish_parent_callback = self._establish_parentage_%(name)s
 
-    def _set_%(name)s(self, v):
-        self._evermod = True
+    def _set_%(name)s(self, v, modifying=True):
+        self._evermod = modifying
         if self._pbf_parent_callback:
             self._pbf_parent_callback()
         if isinstance(v, (ProtoBase, RepeatedSequence)):
@@ -243,9 +243,9 @@ def write_field(cname, parent, num, field, parent_ns):
     _pbf_finalizers.append(_finalize_%(name)s)
 
 ''' % {
-    'name':name, 
-    'num':num, 
-    'field_get':write_field_get(num, type, name, default, scope), 
+    'name':name,
+    'num':num,
+    'field_get':write_field_get(num, type, name, default, scope),
     'type':type,
     'scope':scope,
     'scopeclass': 'cls.' + scope.split('.', 1)[-1] if scope.startswith('self.') else scope,

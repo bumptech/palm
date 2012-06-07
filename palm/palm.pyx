@@ -243,7 +243,11 @@ cdef class ProtoBase:
 
         # Implied: l may be empty if there were no values
         t = typ(l)
-        setattr(self, name, t) # invoke usual handlers, etc
+
+        # Set modifying=False below since we are doing the initial load
+        # if this repeated data onto the object.
+        init_repeated = getattr(self, '_set_%s' % name)
+        init_repeated(t, modifying=False) # invoke usual handlers, etc
         return t
 
     def _buf_get(self, field, typ, name):
