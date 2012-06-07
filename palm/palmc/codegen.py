@@ -187,7 +187,7 @@ def write_field(cname, parent, num, field, parent_ns):
                 v._pbf_establish_parent_callback = self._establish_parentage_%(name)s
 
     def _set_%(name)s(self, v, modifying=True):
-        self._evermod = modifying
+        self._evermod = modifying or self._evermod
         if self._pbf_parent_callback:
             self._pbf_parent_callback()
         if isinstance(v, (ProtoBase, RepeatedSequence)):

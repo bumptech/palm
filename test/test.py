@@ -418,3 +418,12 @@ class TestProto(object):
         assert not pb1.modified()
         pb1.r_secret
         assert not pb1.modified()
+
+    def test_accessing_a_repeated_doesnt_override_previous_evermod_state(self):
+        pb1 = test_palm.Test()
+        assert not pb1.modified()
+        pb1.req_a = 1
+        assert pb1.modified()
+        pb1.r_secret
+        assert pb1.modified()
+
