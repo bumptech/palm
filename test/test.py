@@ -427,3 +427,13 @@ class TestProto(object):
         pb1.r_secret
         assert pb1.modified()
 
+    def test_setting_a_repeated_field_to_empty_sets_evermod_to_True(self):
+        pb1 = test_palm.Test(req_a=1, req_b=2, req_c=3)
+        pb1.r_sha1.extend(['a', 'b', 'c'])
+        pb2 = test_palm.Test(pb1.dumps())
+        assert not pb2.modified()
+        assert pb2.r_sha1
+        pb2.r_sha1.set([])
+        assert not pb2.r_sha1
+        assert pb2.modified()
+
