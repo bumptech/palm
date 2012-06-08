@@ -164,9 +164,14 @@ def write_field(cname, parent, num, field, parent_ns):
             out(
 '''
     @property
-    def %s__stream(self):
-        return self._get_repeated(%s, self.TYPE_%s, "%s", lazy=True)
-''' % (name, num, type, name))
+    def %(name)s__stream(self):
+        if %(num)s in self._cache:
+            def acc(v):
+                v_ = lambda: v
+                return v_
+            return [acc(v) for v in self._cache[%(num)s]]
+        return self._get_repeated(%(num)s, self.TYPE_%(type)s, "%(name)s", lazy=True)
+''' % {'name':name, 'num':num, 'type':type})
 
     # Back to all fields...
     out(

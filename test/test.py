@@ -437,3 +437,23 @@ class TestProto(object):
         assert not pb2.r_sha1
         assert pb2.modified()
 
+    def test_can_append_to_empty_repeated_and_stream(self):
+        pb1 = test_palm.Test(req_a=1, req_b=2, req_c=3)
+        secrets = []
+        for i,c in zip(range(5), 'abcde'):
+            secrets.append(test_palm.Secret(code=i, message=c))
+        pb1.r_secret.extend(secrets)
+        expected = secrets
+        actual = [c() for c in pb1.r_secret__stream]
+        assert actual == expected, [str(a) for a in actual]
+
+    def test_can_append_and_then_stream_and_dumps_works_right(self):
+        pb1 = test_palm.Test(req_a=1, req_b=2, req_c=3)
+        pb1.r_secret.append(test_palm.Secret(code=100, message="woo!"))
+        pb2 = test_palm.Test(pb1.dumps())
+        pb2.r_secret.append(test_palm.Secret(code=200, message="hoo!"))
+        st = pb2.r_secret__stream
+        assert st[0]() == test_palm.Secret(code=100, message="woo!")
+        assert st[1]() == test_palm.Secret(code=200, message="hoo!")
+        pb3 = test_palm.Test(pb2.dumps())
+        assert pb3 == pb2
