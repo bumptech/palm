@@ -2,9 +2,8 @@ import sys
 import os
 import traceback
 
-from palm.palmc.codegen import CodeGenerator, convert_proto_name
-from palm.palmc.parse import make_parser
-
+from palm.palmc.codegen import gen_module, convert_proto_name
+from palm.palmc.parse import make_parser, ProtoParseError
 
 def run():
     assert len(sys.argv) == 3, "exactly two arguments required: path to directory with .proto files and path to destination package"
@@ -13,7 +12,6 @@ def run():
     exit_status = 0
 
     protos = [f for f in os.listdir(d) if f.endswith(".proto")]
-    codegen = CodeGenerator()
 
     for p in protos:
         sys.stdout.write(("%s..." % p).ljust(70))
@@ -30,7 +28,7 @@ def run():
                 raise SyntaxError("Syntax error on line %s near %r" % (
                     source[:l].count('\n') + 1,
                     source[l:l+10]))
-            s = codegen.gen_module([m for m in res if type(m) is tuple],
+            s = gen_module([m for m in res if type(m) is tuple],
                     [m for m in res if type(m) is str],
                     [m for m in res if type(m) is list],
                     )
