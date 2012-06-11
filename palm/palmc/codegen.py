@@ -166,11 +166,11 @@ _PB_finalizers.append('%s%s')
     TYPE_Repeated_%s = Repeated_%s
 
 ''' % (name, scope, type, name, name))
-        type = 'Repeated_%s' % name
-        custom_subtype = scope != 'ProtoBase.'
-        scope = 'self.'
-        if custom_subtype:
-            self.out(
+            type = 'Repeated_%s' % name
+            custom_subtype = scope != 'ProtoBase.'
+            scope = 'self.'
+            if custom_subtype:
+                self.out(
 '''
     @property
     def %s__stream(self):
