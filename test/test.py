@@ -412,3 +412,48 @@ class TestProto(object):
             assert i1 == i2()
 
         assert list(pb1.r_secret) == map(apply, pb2.r_secret__stream)
+
+    def test_accessing_a_repeated_doesnt_mark_parent_as_modified(self):
+        pb1 = test_palm.Test()
+        assert not pb1.modified()
+        pb1.r_secret
+        assert not pb1.modified()
+
+    def test_accessing_a_repeated_doesnt_override_previous_evermod_state(self):
+        pb1 = test_palm.Test()
+        assert not pb1.modified()
+        pb1.req_a = 1
+        assert pb1.modified()
+        pb1.r_secret
+        assert pb1.modified()
+
+    def test_setting_a_repeated_field_to_empty_sets_evermod_to_True(self):
+        pb1 = test_palm.Test(req_a=1, req_b=2, req_c=3)
+        pb1.r_sha1.extend(['a', 'b', 'c'])
+        pb2 = test_palm.Test(pb1.dumps())
+        assert not pb2.modified()
+        assert pb2.r_sha1
+        pb2.r_sha1.set([])
+        assert not pb2.r_sha1
+        assert pb2.modified()
+
+    def test_can_append_to_empty_repeated_and_stream(self):
+        pb1 = test_palm.Test(req_a=1, req_b=2, req_c=3)
+        secrets = []
+        for i,c in zip(range(5), 'abcde'):
+            secrets.append(test_palm.Secret(code=i, message=c))
+        pb1.r_secret.extend(secrets)
+        expected = secrets
+        actual = [c() for c in pb1.r_secret__stream]
+        assert actual == expected, [str(a) for a in actual]
+
+    def test_can_append_and_then_stream_and_dumps_works_right(self):
+        pb1 = test_palm.Test(req_a=1, req_b=2, req_c=3)
+        pb1.r_secret.append(test_palm.Secret(code=100, message="woo!"))
+        pb2 = test_palm.Test(pb1.dumps())
+        pb2.r_secret.append(test_palm.Secret(code=200, message="hoo!"))
+        st = pb2.r_secret__stream
+        assert st[0]() == test_palm.Secret(code=100, message="woo!")
+        assert st[1]() == test_palm.Secret(code=200, message="hoo!")
+        pb3 = test_palm.Test(pb2.dumps())
+        assert pb3 == pb2

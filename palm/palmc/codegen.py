@@ -76,6 +76,7 @@ class %s(ProtoBase):
         '_mods',
         '_retains',
     ]
+
     def __init__(self, _pbf_buf='', _pbf_parent_callback=None, **kw):
         self._pbf_parent_callback = _pbf_parent_callback
         self._cache = {}
@@ -88,8 +89,12 @@ class %s(ProtoBase):
             c(cls)
         del cls._pbf_finalizers
 
-    def fields(self):
+    @classmethod
+    def fields(cls):
         return ['%s']
+
+    def modified(self):
+        return self._evermod
 
     _pbf_strings = []
     _pbf_finalizers = []
@@ -170,9 +175,14 @@ def write_field(cname, parent, num, field, parent_ns):
             out(
 '''
     @property
-    def %s__stream(self):
-        return self._get_repeated(%s, self.TYPE_%s, "%s", lazy=True)
-''' % (name, num, type, name))
+    def %(name)s__stream(self):
+        if %(num)s in self._cache:
+            def acc(v):
+                v_ = lambda: v
+                return v_
+            return [acc(v) for v in self._cache[%(num)s]]
+        return self._get_repeated(%(num)s, self.TYPE_%(type)s, "%(name)s", lazy=True)
+''' % {'name':name, 'num':num, 'type':type})
 
     # Back to all fields...
     out(
@@ -192,8 +202,8 @@ def write_field(cname, parent, num, field, parent_ns):
                 v._pbf_parent_callback = self._mod_%(name)s
                 v._pbf_establish_parent_callback = self._establish_parentage_%(name)s
 
-    def _set_%(name)s(self, v):
-        self._evermod = True
+    def _set_%(name)s(self, v, modifying=True):
+        self._evermod = modifying or self._evermod
         if self._pbf_parent_callback:
             self._pbf_parent_callback()
         if isinstance(v, (ProtoBase, RepeatedSequence)):

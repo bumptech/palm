@@ -23,6 +23,18 @@ production use is young.
 
 Pull requests welcome!
 
+Development
+-----------
+
+Fork on Github: https://github.com/bumptech/palm
+
+Run tests with nose:
+
+```
+pip install protobuf pytest nose
+nosetests test/test.py
+```
+
 Authors
 -------
 

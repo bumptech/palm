@@ -243,7 +243,12 @@ cdef class ProtoBase(object):
 
         # Implied: l may be empty if there were no values
         t = typ(l)
-        setattr(self, name, t) # invoke usual handlers, etc
+
+        if not lazy:
+            # Set modifying=False below since we are doing the initial load
+            # if this repeated data onto the object.
+            init_repeated = getattr(self, '_set_%s' % name)
+            init_repeated(t, modifying=False)
         return t
 
     def _buf_get(self, field, typ, name):
@@ -500,6 +505,14 @@ cdef class RepeatedSequence(list):
     def __setitem__(self, k, v):
         self._pbf_child_touched(v)
         list.__setitem__(self, k, v)
+
+    def __delslice__(self, i, j):
+        self._pbf_child_touched()
+        list.__delslice__(self, i, j)
+
+    def __setslice__(self, i, j, v):
+        self._pbf_child_touched(v)
+        list.__setslice__(self, i, j, v)
 
     def append(self, v):
         self._pbf_child_touched(v)
