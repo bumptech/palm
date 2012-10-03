@@ -457,3 +457,28 @@ class TestProto(object):
         assert st[1]() == test_palm.Secret(code=200, message="hoo!")
         pb3 = test_palm.Test(pb2.dumps())
         assert pb3 == pb2
+
+    def make_foo(self):
+        return test_palm.Test.Foo(baz="baz",
+                                  flop=test_palm.Test.Foo.Flop(desc="flop"))
+
+    def test_update(self):
+        pb1 = test_palm.Test(req_a=1, req_b=2, req_c=3,
+                             msg=self.make_foo())
+        pb2 = test_palm.Test()
+        pb2.update(pb1)
+        assert pb1 == pb2
+
+        pb2 = test_palm.Test(a=23)
+        pb2.update(pb1)
+        assert pb2.a == 23
+
+        pb2 = test_palm.Test()
+        pb2.r_sha1.set(['a', 'b', 'c'])
+        pb2.update(pb1)
+        assert pb2.r_sha1 == ['a', 'b', 'c']
+
+        pb1.r_sha1.set(['d', 'e', 'f'])
+        pb2.update(pb1)
+        assert pb2.r_sha1 == ['d', 'e', 'f']
+
