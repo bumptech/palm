@@ -15,7 +15,7 @@ cdef extern from "string.h":
 cdef extern from "palmcore.h":
     ctypedef struct pbf_protobuf:
         pass
-    pbf_protobuf * pbf_load(char *data, uint64_t size, 
+    pbf_protobuf * pbf_load(char *data, uint64_t size,
         char *stringmap, uint64_t maxstringid)
     void pbf_free(pbf_protobuf *pbf)
     int pbf_get_bytes(pbf_protobuf *pbf, uint64_t field_num,
@@ -43,7 +43,7 @@ cdef extern from "palmcore.h":
     int pbf_get_bytes_stream(pbf_protobuf *pbf, uint64_t field_num,
             pbf_byte_stream_callback cb, void *passthrough)
 
-    int pbf_get_integer_stream(pbf_protobuf *pbf, uint64_t field_num, 
+    int pbf_get_integer_stream(pbf_protobuf *pbf, uint64_t field_num,
             pbf_uint_stream_callback cb, void *passthrough)
 
     int pbf_get_signed_integer_stream(pbf_protobuf *pbf,
@@ -217,7 +217,7 @@ cdef class ProtoBase(object):
                  ctyp == self.CTYPE_uint64 or \
                  ctyp == self.CTYPE_fixed32 or \
                  ctyp == self.CTYPE_fixed64:
-                pbf_get_integer_stream(self.buf, field, 
+                pbf_get_integer_stream(self.buf, field,
                         unsigned_get, <void *>l)
             elif ctyp == self.CTYPE_int64 or \
                  ctyp == self.CTYPE_sfixed64:
@@ -229,10 +229,10 @@ cdef class ProtoBase(object):
                         field, 0, 1, signed_signed64_cb,
                         <void *>l)
             elif ctyp == self.CTYPE_double:
-                pbf_get_integer_stream(self.buf, field, 
+                pbf_get_integer_stream(self.buf, field,
                         unsigned_double_get, <void *>l)
             elif ctyp == self.CTYPE_float:
-                pbf_get_integer_stream(self.buf, field, 
+                pbf_get_integer_stream(self.buf, field,
                         unsigned_float_get, <void *>l)
             elif ctyp == self.CTYPE_bool:
                 pbf_get_integer_stream(self.buf, field,
@@ -460,6 +460,19 @@ cdef class ProtoBase(object):
 
     def get_field_number(self, name):
         return self._field_map[name]
+
+    def update(self, other):
+        fields = set(self.fields())
+        for field in other.fields():
+            if field not in fields:
+                continue
+
+            if getattr(other, field + '__exists'):
+                val = getattr(other, field)
+                try:
+                    setattr(self, field, val)
+                except AssertionError:
+                    setattr(self, field, val.copy())
 
     def __richcmp__(self, other, op):
         EQ, NE = (2, 3)
