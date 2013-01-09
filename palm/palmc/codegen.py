@@ -64,12 +64,23 @@ def write_class(name, scope, fields, subs, enums):
     out(
 '''
 class %s(ProtoBase):
+    _required = [%s]
+    _field_map = %r
+
+    __slots__ = [
+        '_data',
+        '_pbf_parent_callback',
+        '_cache',
+        '_pbf_establish_parent_callback',
+        '_evermod',
+        '_mods',
+        '_retains',
+    ]
+
     def __init__(self, _pbf_buf='', _pbf_parent_callback=None, **kw):
         self._pbf_parent_callback = _pbf_parent_callback
         self._cache = {}
         self._pbf_establish_parent_callback = None
-        self._required = [%s]
-        self._field_map = %r
         ProtoBase.__init__(self, _pbf_buf, **kw)
 
     @classmethod
