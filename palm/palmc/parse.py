@@ -40,6 +40,24 @@ import_path             := -'"'*
 <option>                := "option", -';'*, ";"!, whitespace*
 '''
 
+class Reference(object):
+    """A reference to a name
+
+    Can show up in parsed results.
+
+    """
+    def __init__(self, name):
+        self.name = name
+
+    def with_scope(self, scope):
+        """Simply joins the referenced name to the given scope
+
+        The scope must end with a "." character.
+
+        """
+        assert not scope or scope[-1] == ".", "Invalid scope: %r" % scope
+        return "%s%s" % (scope, self.name)
+
 class ProtoParseError(Exception):
     def __init__(self, start, end, buf, message):
         line = lines(start, end, buf)
@@ -116,6 +134,8 @@ class ProtoProcessor(DispatchProcessor):
             b = True
         elif b == 'false':
             b = False
+        elif subtags and subtags[0][0] == 'field_default_value_l':
+            b = Reference(b)
         return b
 
     def enum(self, (tag, start, stop, subtags), buffer):

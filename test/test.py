@@ -482,3 +482,6 @@ class TestProto(object):
         pb2.update(pb1)
         assert pb2.r_sha1 == ['d', 'e', 'f']
 
+    def test_optional_default_enum_value(self):
+        pb1 = test_palm.Test()
+        assert pb1.chosen_class == test_palm.Test.ECONOMY

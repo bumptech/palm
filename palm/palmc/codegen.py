@@ -1,6 +1,7 @@
 import sys
 import os
 from palm.palm import ProtoBase
+from palm.palmc.parse import Reference
 pfx = ''
 o = []
 def convert_proto_name(n):
@@ -137,6 +138,8 @@ _PB_finalizers.append('%s%s')
 
 def write_field_get(num, type, name, default, scope):
     if default is not None:
+        if isinstance(default, Reference):
+            default = default.with_scope(scope)
         r = '''
             try:
                 r = self._buf_get(%s, %sTYPE_%s, '%s')
