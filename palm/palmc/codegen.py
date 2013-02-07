@@ -57,6 +57,13 @@ def write_enum(name, spec):
 TYPE_%s = ProtoBase.TYPE_int32
 '''
 % name)
+    out('''
+_%s__map = {%s}\n''' % (name,
+                        ', '.join(("%s: '%s'" % (value, cn)) for cn, value in spec.items())))
+    out('''
+def get_%s_name(self, v):
+    return self._%s__map[v]
+''' % (name, name))
 
 def write_class(name, scope, fields, subs, enums, with_slots):
     global pfx
