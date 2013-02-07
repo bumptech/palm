@@ -9,7 +9,7 @@ def convert_proto_name(n):
     assert last == "proto"
     return "%s_palm" % p
 
-def gen_module(messages, imports, tlenums):
+def gen_module(messages, imports, tlenums, with_slots):
     global pfx
     global o
     pfx = ''
@@ -22,7 +22,7 @@ def gen_module(messages, imports, tlenums):
         write_enum(ename, espec)
 
     for n, (fields, subs, en) in messages:
-        write_class(n, '', fields, subs, en)
+        write_class(n, '', fields, subs, en, with_slots)
 
     out('''
 
@@ -58,15 +58,11 @@ TYPE_%s = ProtoBase.TYPE_int32
 '''
 % name)
 
-def write_class(name, scope, fields, subs, enums):
+def write_class(name, scope, fields, subs, enums, with_slots):
     global pfx
     name = clean(name)
-    out(
-'''
-class %s(ProtoBase):
-    _required = [%s]
-    _field_map = %r
-
+    if with_slots:
+        slots = '''
     __slots__ = [
         '_data',
         '_pbf_parent_callback',
@@ -76,7 +72,15 @@ class %s(ProtoBase):
         '_mods',
         '_retains',
     ]
-
+'''
+    else:
+        slots = ''
+    out(
+'''
+class %s(ProtoBase):
+    _required = [%s]
+    _field_map = %r
+    %s
     def __init__(self, _pbf_buf='', _pbf_parent_callback=None, **kw):
         self._pbf_parent_callback = _pbf_parent_callback
         self._cache = {}
@@ -105,6 +109,7 @@ class %s(ProtoBase):
 ''' % (name,
        ", ".join(str(num) for num, (req, _, _, _) in fields.iteritems() if req == 'required'),
        dict((name, num) for num, (_, _, name, _) in fields.iteritems()),
+       slots,
        "', '".join(name for _, _, name, _ in fields.values())))
 
     ns = {}
@@ -117,7 +122,7 @@ class %s(ProtoBase):
     next_scope = name if not scope else ".".join([scope, name])
     for sn, (sf, ss, sens) in subs:
         pfx += "    "
-        write_class(sn, next_scope, sf, ss, sens)
+        write_class(sn, next_scope, sf, ss, sens, with_slots)
         pfx = pfx[:-4]
         snm = clean(sn)
         ns[snm] = 'message'
