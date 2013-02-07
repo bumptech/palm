@@ -107,6 +107,12 @@ class %s(ProtoBase):
     def modified(self):
         return self._evermod
 
+    def __contains__(self, item):
+        try:
+            return getattr(self, '%%s__exists' %% item)
+        except AttributeError:
+            return False
+
     _pbf_strings = []
     _pbf_finalizers = []
 
@@ -249,12 +255,6 @@ def write_field(cname, parent, num, field, parent_ns):
     @property
     def %(name)s__exists(self):
         return %(num)s in self._mods or self._buf_exists(%(num)s)
-
-    def __contains__(self, item):
-        try:
-            return getattr(self, '%%s__exists' %% item)
-        except AttributeError:
-            return False
 
     @property
     def %(name)s__type(self):
