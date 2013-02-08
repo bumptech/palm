@@ -233,6 +233,13 @@ class TestProto(object):
         n = test_palm.Test(o.dumps())
         assert n.r_cls == o.r_cls
 
+    def test_enum_name(self):
+        m = self.get_proto()
+        o = test_palm.Test(m.SerializeToString())
+        assert o.get_AirplaneClass_name(o.FIRST) == 'FIRST'
+        assert o.get_AirplaneClass_name(o.ECONOMY) == 'ECONOMY'
+        assert o.get_AirplaneClass_name(o.ECONOMY) != 'BUSINESS'
+
     def test_default(self):
         pb = self.get_proto()
         new = test_palm.Test(pb.SerializeToString())
