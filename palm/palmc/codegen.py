@@ -62,8 +62,9 @@ TYPE_%s = ProtoBase.TYPE_int32
 _%s__map = {%s}\n''' % (name,
                         ', '.join(("%s: '%s'" % (value, cn)) for cn, value in spec.items())))
     out('''
-def get_%s_name(self, v):
-    return self._%s__map[v]
+@classmethod
+def get_%s_name(cls, v):
+    return cls._%s__map[v]
 ''' % (name, name))
 
 def write_class(name, scope, fields, subs, enums, with_slots):
