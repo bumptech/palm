@@ -18,10 +18,8 @@ How fast?
 Status
 ------
 
-It is currently beta quality.  It is used in production, but its
-production use is young.
-
-Pull requests welcome!
+Palm is stable enough for production use, having logged millions
+of uptime-hours over the last few years.
 
 Development
 -----------
