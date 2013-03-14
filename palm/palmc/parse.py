@@ -95,8 +95,11 @@ class ProtoProcessor(DispatchProcessor):
 
         return cm, self.messages[cm]
 
+    def _get_message_namespace(self):
+        return '-'.join(m[0] for m in self.message_stack)
+
     def message_label(self, (tag, start, stop, subtags), buffer):
-        self.current_message = str(len(self.message_stack)) + '-' +  buffer[start:stop]
+        self.current_message = self._get_message_namespace() + '-' + buffer[start:stop]
         if self.current_message in self.messages:
             raise ProtoParseError(start, stop, buffer, "message %s already defined" % self.current_message)
         self.messages[self.current_message] = {}, [] # fields, submessages

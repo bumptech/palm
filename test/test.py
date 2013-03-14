@@ -10,13 +10,15 @@ def run(cmd):
     assert child.wait() == 0, "Command failed:\n%s" % child.stderr.read()
 
 root = dirname(abspath(__file__))
-run('protoc --python_out=%s -I%s %s/test.proto %s/foo.proto' % (root, root, root, root))
+run('protoc --python_out=%s -I%s %s/*.proto' % (root, root, root))
 run('palmc %s %s' % (root, root))
 
 import py.test
 
 import test_palm
 import test_pb2
+import test_nesting_palm
+import test_nesting_pb2
 
 class TestPalmc(object):
     def test_duplicate(self):
@@ -492,3 +494,20 @@ class TestProto(object):
     def test_optional_default_enum_value(self):
         pb1 = test_palm.Test()
         assert pb1.chosen_class == test_palm.Test.ECONOMY
+
+
+class TestNesting(object):
+    def test_nested_messages(self):
+        """See https://github.com/bumptech/palm/issues/24"""
+        p = test_nesting_palm.A()
+        p.b = test_nesting_palm.A.B()
+        p.b.x = test_nesting_palm.A.B.X(wat=False)
+
+        g = test_nesting_pb2.A()
+        g.b.x.wat = False
+
+        assert p.dumps() == g.SerializeToString()
+
+        g2 = test_nesting_pb2.A()
+        g2.ParseFromString(p.dumps())
+        assert g == g2

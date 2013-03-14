@@ -44,7 +44,7 @@ def out(s):
     o.append(s)
 
 def clean(name):
-    return name.split('-', 1)[1]
+    return name.rsplit('-', 1)[1]
 
 def write_enum(name, spec):
     out(
