@@ -1,0 +1,17 @@
+message A {
+    optional B b = 1;
+    optional C c = 2;
+
+    message B {
+        optional X x = 1;
+        message X {
+            optional bool wat = 1;
+        }
+    }
+    message C {
+        optional X x = 1;
+        message X {
+            optional bool wat = 1;
+        }
+    }
+}
