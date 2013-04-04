@@ -194,9 +194,6 @@ static void pbf_scan (pbf_protobuf *pbf, char* stringmap, int maxstringid) {
             default: // unknown type
                 return;
         }
-        struct timeval tv;
-        gettimeofday(&tv, NULL);
-        //printf("%lu %u\n", field_num, tv.tv_usec);
         if (ptr > limit)
             return; // overflow on string length, etc
         cur->raw_len = ptr - cur->raw;
