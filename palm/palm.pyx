@@ -444,6 +444,23 @@ cdef class ProtoBase(object):
                     ctyp = typ
                     self._save_item(f, ctyp, v)
 
+    def _append_to_repeated(self, field_number, field_type, value):
+        if field_number in self._cache:
+            raise ValueError("can't fast_append to rendered repeated")
+        assert issubclass(field_type, RepeatedSequence)
+        subtype = field_type.pb_subtype
+        if type(subtype) != int:
+            assert issubclass(subtype, ProtoBase)
+            assert isinstance(value, ProtoBase)
+            serialized_value = value.dumps()
+            self._retains.append(serialized_value)
+            length = len(serialized_value)
+            pbf_set_bytes(self.buf, field_number, serialized_value, length)
+        else:
+            self._save_item(field_number, subtype, value)
+        self._evermod = True
+
+
     def _serialize(self):
         cdef unsigned char *cout
         cdef int length
