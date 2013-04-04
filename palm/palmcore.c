@@ -272,7 +272,7 @@ pbf_protobuf * pbf_load(char *data, uint64_t size, char *stringmap, uint64_t max
 }
 
 void pbf_free(pbf_protobuf *pbf) {
-    int i, j;
+    int i;
     pbf_mark *cur;
 
     /* free repeated slabs */
