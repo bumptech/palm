@@ -19,6 +19,9 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  python%{pyver}
 BuildRequires:  python%{pyver}-devel
 BuildRequires:  python%{pyver}-distribute
+BuildRequires:  python%{pyver}-simpleparse
+
+Requires:       python%{pyver}-simpleparse
 
 %define debug_package %{nil}
 
