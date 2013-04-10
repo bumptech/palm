@@ -15,3 +15,48 @@ message A {
         }
     }
 }
+
+message Q {
+
+  message Binding {
+  }
+
+  message T {
+    optional Binding binding = 1;
+  }
+}
+
+message Q2 {
+
+  message T {
+    optional Binding binding = 1;
+  }
+
+  message Binding {
+  }
+
+}
+
+message Q3 {
+
+  message T {
+    message Binding {
+    }
+
+    optional Binding binding = 1;
+  }
+}
+
+message Q4 {
+
+  message T {
+    message U { }
+    optional Q3.T.Binding a = 1;
+    optional Q2.Binding b = 2;
+  }
+
+  message V {
+    optional T.U a = 1;
+    optional Q4.T.U b = 2;
+  } 
+}

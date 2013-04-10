@@ -1,0 +1,11 @@
+package com.foo.bif.p5;
+import "p4.proto";
+
+message M {
+  optional com.foo.bar.biz.p4.M a = 1;
+  optional foo.bar.biz.p4.M b = 2;
+  optional bar.biz.p4.M c = 3;
+ 
+ // Illegal - not enough prefix to find M
+  // optional biz.p4.M d = 4;
+}

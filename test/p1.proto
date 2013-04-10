@@ -1,0 +1,4 @@
+package com.foo.p1;
+
+message Q {
+}

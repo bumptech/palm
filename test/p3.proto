@@ -1,0 +1,21 @@
+package com.foo.p3;
+import "p1.proto";
+
+message com {
+  message foo {
+    message p1 {
+      message Q { }
+    }
+  }
+}
+
+message cam {
+  message Q { }
+}
+
+message M1 {
+  optional com.foo.p1.Q a = 1;
+  optional .com.foo.p1.Q b = 2;
+  // Illegal - leading "." always means package
+  // optional .cam.Q c = 3;
+}

@@ -1,0 +1,3 @@
+package com.foo.bar.biz.p4;
+message M { }
+

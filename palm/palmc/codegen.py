@@ -1,7 +1,8 @@
+import pdb
 import sys
 import os
 from palm.palm import ProtoBase
-from palm.palmc.parse import Reference
+from palm.palmc.parse import Reference, QualifiedType
 pfx = ''
 o = []
 def convert_proto_name(n):
@@ -10,20 +11,54 @@ def convert_proto_name(n):
     assert last == "proto"
     return "%s_palm" % p
 
-def gen_module(messages, imports, tlenums, with_slots):
+def lookup_package(qualifier, type, packages, package):
+    # if qualfier begins with a ".", automatically search for
+    # fully qualified package
+    if qualifier.startswith(".") or package == None or len(package) == 0:
+        if qualifier[1:] in packages:
+            return convert_proto_name(packages[qualifier[1:]].file) + ".", type
+        else:
+            return None, type
+
+    # Search for a qualifier by taking the current package
+    # and appending the qualifier given to successively "outer"
+    # (i.e., shorter) paths on the current package.
+    idx = 0
+    package_path = package
+    while len(package_path) > 0:
+        p = package_path + "." + qualifier
+        if p in packages:
+            return convert_proto_name(packages[p].file) + ".", type
+
+        idx = package_path.rfind(".")
+        if idx > -1:
+            package_path = package_path[:idx]
+        else:
+            package_path = ""
+
+    # The qualifier may be an actual package reference, so we
+    # check here. We do this last because innermost scope must
+    # searched first, and a package curr_package + qualifier may
+    # have been imported.
+    if qualifier in packages:
+        return convert_proto_name(packages[qualifier].file) + ".", type
+    else:
+        return None, type
+
+def gen_module(messages, imports, tlenums, with_slots, packages, curr_package):
     global pfx
     global o
     pfx = ''
 
     out('from palm.palm import ProtoBase, is_string, RepeatedSequence, ProtoValueError\n\n_PB_type = type\n_PB_finalizers = []\n\n')
     for i in imports:
-        out('from %s import *\n' % convert_proto_name(i))
+        out('import %s\n' % convert_proto_name(i))
 
     for ename, espec in tlenums:
         write_enum(ename, espec)
 
     for n, (fields, subs, en) in messages:
-        write_class(n, '', fields, subs, en, with_slots)
+        write_class(n, '', fields, subs, en, with_slots, packages, curr_package)
 
     out('''
 
@@ -67,7 +102,7 @@ def get_%s_name(cls, v):
     return cls._%s__map[v]
 ''' % (name, name))
 
-def write_class(name, scope, fields, subs, enums, with_slots):
+def write_class(name, scope, fields, subs, enums, with_slots, packages, curr_package):
     global pfx
     name = clean(name)
     if with_slots:
@@ -137,7 +172,7 @@ class %s(ProtoBase):
     next_scope = name if not scope else ".".join([scope, name])
     for sn, (sf, ss, sens) in subs:
         pfx += "    "
-        write_class(sn, next_scope, sf, ss, sens, with_slots)
+        write_class(sn, next_scope, sf, ss, sens, with_slots, packages, curr_package)
         pfx = pfx[:-4]
         snm = clean(sn)
         ns[snm] = 'message'
@@ -148,7 +183,7 @@ class %s(ProtoBase):
 
     # TODO -- submessages
     for num, field in fields.iteritems():
-        write_field(name, scope, num, field, ns)
+        write_field(name, scope, num, field, ns, packages, curr_package)
 
     out('''
 TYPE_%s = %s
@@ -169,14 +204,41 @@ def write_field_get(num, type, name, default, scope):
             r = self._buf_get(%s, %sTYPE_%s, '%s')'''
     return r % (num, scope, type, name)
 
-def write_field(cname, parent, num, field, parent_ns):
+
+def write_field(cname, parent, num, field, parent_ns, packages, curr_package):
     req, type, name, default = field
-    if hasattr(ProtoBase, 'TYPE_%s' % type):
+    # if isinstance(type, QualifiedType):
+    #     print "type is a qualified type.\n"
+    #     print "type.namespace: " + type.namespace + "\n"
+    #     print "packages[type.namespace].file: " + packages[type.namespace].file + "\n"
+    #     scope = convert_proto_name(packages[type.namespace].file) + "."
+    #     type = type.typ
+    #     print "final scope: " + scope + "\n"
+    #     print "final type: " + type + "\n"
+    if hasattr(ProtoBase, 'TYPE_%s' % type.typ):
+        # print "type " + type.typ + " is in ProtoBase.\n"
         scope = 'ProtoBase.'
-    elif type in parent_ns:
-        scope = '%s.' % (cname if not parent else ".".join([parent, cname]))
+        type = type.typ
+    elif isinstance(type, QualifiedType):
+        scope, typ = type.lookup_type()
+        if scope == None:
+            scope, typ = lookup_package(type.qualifier, type.typ, packages, curr_package)
+            if scope == None:
+                scope, typ = lookup_package(type.qualifier, type.typ, packages, curr_package)
+
+
+        if scope == None:
+            scope = ''
+        type = typ
+
+        print "got scope " + scope + " for qualified type " + str(type)
     else:
-        scope = ''
+        # print "type " + str(type) + " has scope " + str(type.scope)
+        scope, type = type.lookup_type()
+        print "got scope " + scope + " for " + str(type)
+        if scope == None:
+            scope = ''
+
     if req == 'repeated':
         out(
 '''
