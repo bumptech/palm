@@ -5,7 +5,12 @@ message M {
   optional com.foo.bar.biz.p4.M a = 1;
   optional foo.bar.biz.p4.M b = 2;
   optional bar.biz.p4.M c = 3;
- 
- // Illegal - not enough prefix to find M
+  optional M d = 4;
+  // Illegal - not enough prefix to find M
   // optional biz.p4.M d = 4;
+
+  // Illegal - packages imported by p4.proto
+  // are not available to p5.proto
+  // optional com.foo.p1.Q e = 5
+
 }

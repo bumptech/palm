@@ -20,6 +20,13 @@ import test_pb2
 import test_nesting_palm
 import test_nesting_pb2
 
+import p1_palm
+import p1_pb2
+import p2_palm
+import p3_palm
+import p4_palm
+import p5_palm
+
 class TestPalmc(object):
     def test_duplicate(self):
         duplicate_root = join(root, 'duplicate')
@@ -540,3 +547,56 @@ class TestNesting(object):
         g.a.wat = True
         g.b.wat = False
         assert p.dumps() == g.SerializeToString()
+
+
+class TestScoping(object):
+    def test_p2_scope(self):
+        p1Q = p1_palm.Q
+        p2Q = p2_palm.M2.com.foo.p1.Q
+
+        p = p2_palm.M1()
+        assert p.a_p1__type == p1Q
+        assert p.b_p1__type == p1Q
+        assert p.c_p1__type == p1Q
+        assert p.d_p1__type == p1Q
+       
+        p = p2_palm.M2()
+        assert p.a_p1__type == p1Q
+        assert p.b_p1__type == p1Q
+        assert p.c_local__type == p2Q
+        assert p.e_p1__type == p1Q
+
+        p = p2_palm.M2.com()
+        assert p.a_p1__type == p1Q
+        assert p.b_local__type == p2Q
+        assert p.c_local__type == p2Q
+        assert p.e_p1__type == p1Q
+
+        p = p2_palm.M2.com.foo()
+        assert p.a_local__type == p2Q
+        assert p.b_local__type == p2Q
+        assert p.c_local__type == p2Q
+        assert p.e_p1__type == p1Q
+
+        p = p2_palm.M2.com.foo.p1()
+        assert p.a_local__type == p2Q
+        assert p.b_local__type == p2Q
+        assert p.c_local__type == p2Q
+        assert p.d_local__type == p2Q
+        assert p.e_p1__type == p1Q
+
+        p = p2_palm.M3.Binding.Binding.Binding()
+        assert p.m3_b_b_b__type == p2_palm.M3.Binding.Binding.Binding
+
+    def test_p3_scope(self):
+        p = p3_palm.M1()
+        assert p.a__type == p3_palm.com.foo.p1.Q
+        assert p.b__type == p1_palm.Q
+
+    def test_p5_scope(self):
+        p = p5_palm.M()
+        assert p.a__type == p4_palm.M
+        assert p.b__type == p4_palm.M
+        assert p.c__type == p4_palm.M
+        assert p.d__type == p5_palm.M
+        

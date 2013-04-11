@@ -34,7 +34,9 @@ message M2 {
         optional Q d_local = 4; // local
 	optional .com.foo.p1.Q e_p1 = 5; // from p1
 
-        message Q { }
+        message Q { 
+	  optional bool wat = 1;
+	}
       }
     }
   }
