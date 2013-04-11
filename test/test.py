@@ -511,3 +511,32 @@ class TestNesting(object):
         g2 = test_nesting_pb2.A()
         g2.ParseFromString(p.dumps())
         assert g == g2
+
+        p = test_nesting_palm.Q.T(binding=test_nesting_palm.Q.Binding(wat=False))
+        g = test_nesting_pb2.Q.T()
+        g.binding.wat = False
+        assert p.dumps() == g.SerializeToString()
+
+        p = test_nesting_palm.Q2.T(binding=test_nesting_palm.Q2.Binding(wat=False))
+        g = test_nesting_pb2.Q2.T()
+        g.binding.wat = False
+        assert p.dumps() == g.SerializeToString()
+
+        p = test_nesting_palm.Q3.T(binding=test_nesting_palm.Q3.T.Binding(wat=False))
+        g = test_nesting_pb2.Q3.T()
+        g.binding.wat = False
+        assert p.dumps() == g.SerializeToString()
+
+        p = test_nesting_palm.Q4.T(a=test_nesting_palm.Q3.T.Binding(wat=False),
+                                   b=test_nesting_palm.Q2.Binding(wat=True))
+        g = test_nesting_pb2.Q4.T()
+        g.a.wat = False
+        g.b.wat = True
+        assert p.dumps() == g.SerializeToString()
+
+        p = test_nesting_palm.Q4.V(a=test_nesting_palm.Q4.T.U(wat=True),
+                                   b=test_nesting_palm.Q4.T.U(wat=False))
+        g = test_nesting_pb2.Q4.V()
+        g.a.wat = True
+        g.b.wat = False
+        assert p.dumps() == g.SerializeToString()

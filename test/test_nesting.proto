@@ -19,6 +19,7 @@ message A {
 message Q {
 
   message Binding {
+    optional bool wat = 1;
   }
 
   message T {
@@ -33,6 +34,7 @@ message Q2 {
   }
 
   message Binding {
+    optional bool wat = 1;
   }
 
 }
@@ -41,6 +43,7 @@ message Q3 {
 
   message T {
     message Binding {
+      optional bool wat = 1;
     }
 
     optional Binding binding = 1;
@@ -50,7 +53,9 @@ message Q3 {
 message Q4 {
 
   message T {
-    message U { }
+    message U { 
+      optional bool wat = 1;
+    }
     optional Q3.T.Binding a = 1;
     optional Q2.Binding b = 2;
   }
