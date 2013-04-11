@@ -2,7 +2,7 @@ import pdb
 import sys
 import os
 from palm.palm import ProtoBase
-from palm.palmc.parse import Reference, QualifiedType
+from palm.palmc.parse import Reference, QualifiedTypeDecl
 pfx = ''
 o = []
 def convert_proto_name(n):
@@ -207,19 +207,10 @@ def write_field_get(num, type, name, default, scope):
 
 def write_field(cname, parent, num, field, parent_ns, packages, curr_package):
     req, type, name, default = field
-    # if isinstance(type, QualifiedType):
-    #     print "type is a qualified type.\n"
-    #     print "type.namespace: " + type.namespace + "\n"
-    #     print "packages[type.namespace].file: " + packages[type.namespace].file + "\n"
-    #     scope = convert_proto_name(packages[type.namespace].file) + "."
-    #     type = type.typ
-    #     print "final scope: " + scope + "\n"
-    #     print "final type: " + type + "\n"
     if hasattr(ProtoBase, 'TYPE_%s' % type.typ):
-        # print "type " + type.typ + " is in ProtoBase.\n"
         scope = 'ProtoBase.'
         type = type.typ
-    elif isinstance(type, QualifiedType):
+    elif isinstance(type, QualifiedTypeDecl):
         scope, typ = type.lookup_type()
         if scope == None:
             scope, typ = lookup_package(type.qualifier, type.typ, packages, curr_package)
@@ -230,12 +221,8 @@ def write_field(cname, parent, num, field, parent_ns, packages, curr_package):
         if scope == None:
             scope = ''
         type = typ
-
-        print "got scope " + scope + " for qualified type " + str(type)
     else:
-        # print "type " + str(type) + " has scope " + str(type.scope)
         scope, type = type.lookup_type()
-        print "got scope " + scope + " for " + str(type)
         if scope == None:
             scope = ''
 
