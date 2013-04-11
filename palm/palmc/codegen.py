@@ -214,9 +214,6 @@ def write_field(cname, parent, num, field, parent_ns, packages, curr_package):
         scope, typ = type.lookup_type()
         if scope == None:
             scope, typ = lookup_package(type.qualifier, type.typ, packages, curr_package)
-            if scope == None:
-                scope, typ = lookup_package(type.qualifier, type.typ, packages, curr_package)
-
 
         if scope == None:
             scope = ''

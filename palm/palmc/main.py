@@ -1,6 +1,7 @@
 import sys
 import os
 import traceback
+import pdb
 from optparse import OptionParser
 
 from palm.palmc.codegen import gen_module, convert_proto_name
@@ -40,11 +41,11 @@ def run():
 
     try:
         sys.stdout.write("Parsing...\n")
-        for p in protos:
-            sys.stdout.write(("%s..." % p).ljust(70))
+        for proto_file in protos:
+            sys.stdout.write(("%s..." % proto_file).ljust(70))
             sys.stdout.flush()
             
-            source = open(os.path.join(d, p)).read()
+            source = open(os.path.join(d, proto_file)).read()
             _, res, l = make_parser().parse(source)
 
             if l != len(source):
@@ -55,20 +56,20 @@ def run():
             package_list = [m for m in res if type(m) is Package]
             if len(package_list) == 1:
                 package = package_list[0].name
-                ns = Namespace(package, p)
+                ns = Namespace(package, proto_file)
                 packages_to_files[package] = ns
-                files_to_packages[p] = ns
+                files_to_packages[proto_file] = ns
             elif len(package_list) > 1:
-                raise SyntaxError("Proto file %s declares more than 1 package." % p)
+                raise SyntaxError("Proto file %s declares more than 1 package." % proto_file)
             else:
                 package = None
 
-            parsed.append((res, package, p))
+            parsed.append((res, package, proto_file))
             sys.stdout.write("[OKAY]\n")
 
         sys.stdout.write("Generating code...\n")
-        for (res, package, p) in parsed:
-            sys.stdout.write(("%s..." % p).ljust(70))
+        for (res, package, proto_file) in parsed:
+            sys.stdout.write(("%s..." % proto_file).ljust(70))
             sys.stdout.flush()
             # Filter the package mappings given to 
             # gen_module based on the packages 
@@ -78,9 +79,9 @@ def run():
             # but we aren't going to worry abou that), so we only need
             # to look for packages imported directly.
             imports = [m for m in res if type(m) is str]
-            module_packages = dict([(package, file) for (package, file) 
-                                   in packages_to_files.iteritems() 
-                                   if package in imports])
+            module_packages = dict([(p, ns) for (p, ns) 
+                                   in packages_to_files.iteritems()
+                                   if ns.file in imports])
             s = gen_module([m for m in res if type(m) is tuple],
                     imports,
                     [m for m in res if type(m) is list],
@@ -88,7 +89,7 @@ def run():
                     module_packages,
                     package
                     )
-            open(os.path.join(od, convert_proto_name(p) + ".py"), 'wb').write(s)
+            open(os.path.join(od, convert_proto_name(proto_file) + ".py"), 'wb').write(s)
             sys.stdout.write("[OKAY]\n")
     except:
         sys.stdout.write("[FAIL]\n")
