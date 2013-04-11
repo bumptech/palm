@@ -183,7 +183,7 @@ class %s(ProtoBase):
 
     # TODO -- submessages
     for num, field in fields.iteritems():
-        write_field(name, scope, num, field, ns, packages, curr_package)
+        write_field(num, field, packages, curr_package)
 
     out('''
 TYPE_%s = %s
@@ -205,7 +205,7 @@ def write_field_get(num, type, name, default, scope):
     return r % (num, scope, type, name)
 
 
-def write_field(cname, parent, num, field, parent_ns, packages, curr_package):
+def write_field(num, field, packages, curr_package):
     req, type, name, default = field
     if hasattr(ProtoBase, 'TYPE_%s' % type.typ):
         scope = 'ProtoBase.'
