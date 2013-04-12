@@ -60,7 +60,7 @@ class Scope(object):
         name is ultimately not found."""
         if name in self.local_names.keys():
             return self
-        elif self.parent == None:
+        elif self.parent is None:
             return None
         else:
             return self.parent.lookup_scope(name)
@@ -68,7 +68,7 @@ class Scope(object):
     def curr_scope(self):
         """Returns a string representation of the current scope (that can be
         used as a python module reference)."""
-        if self.parent == None:
+        if self.parent is None:
             return self.name
         else:
             parent_name = self.parent.curr_scope()
@@ -96,7 +96,7 @@ class Scope(object):
         return self.__repr__()
 
     def __repr__(self):
-        if self.parent == None:
+        if self.parent is None:
             return "(" + ",".join(self.local_names.keys()) + ")"
         else:
             return "(" + str(self.name) + ": " + ",".join(self.local_names.keys()) + "); " + str(self.parent)
@@ -136,15 +136,13 @@ class ProtoFieldDecl:
     """Represents the type of a field declaration."""
     
     def lookup_type(self):
-        """Returns the scope of the type used to define this field. Returns a
-        tuple. The first element is a string giving a dotted path
-        prefix (representing the scope of the given type) for the
-        type; the second is the type specified for the field (without
-        any prefix). When the first element is present, it will ALWAYS end
-        with a trailing period.
+        """Returns the scope of the type used to define this field. The value
+        returned is a string giving a dotted path prefix (representing
+        the scope of the given type) for the type. When a string is
+        returned, it will ALWAYS end with a trailing period.
 
         If the type is not found in the current lexical environment,
-        the first element will be None.
+        None is returned.
 
         """
         pass
@@ -160,10 +158,11 @@ class UnqualifiedTypeDecl(ProtoFieldDecl):
 
     def lookup_type(self):
         scope = self.scope.lookup_scope(self.typ)
-        if scope == None:
-            return None, self.typ
+        if scope is None:
+            return None
         else:
-            return scope.curr_scope(), self.typ
+            return scope.curr_scope()
+
     def __str__(self):
         return "(UnqualifiedTypeDecl) " + str(self.typ)
 
@@ -186,21 +185,20 @@ class QualifiedTypeDecl(ProtoFieldDecl):
         self.scope = scope
 
     def lookup_type(self):
-        """Returns a tuple representing the path to this type
-        in the current module. If the first element of the tuple is None,
-        then the type was not found in the current lexical scope. Otherwise,
-        the first element gives the dot-delimited path to the type. In this case,
-        the path ALWAYS ends with a period (".").
+        """Returns a string giving the path to this type in the current
+        module. If the value returned is None, then the type was not
+        found in the current lexical scope. Otherwise, the string
+        returned gives the dot-delimited path to the type. The path
+        returned ALWAYS ends with a period (".").
 
-        The second element of the tuple is the name of this type, always, and will
-        NOT include the prefix.
+        Note that package-qualified types (e.g., ".com.foo.Q") are
+        never found in scope here, and always result in None.
 
-        Note that package-qualified types (e.g., ".com.foo.Q") are never found
-        in scope here."""
+        """
         # If qualifier starts with a dot, this is 
         # definitely a package reference
         if self.qualifier.startswith("."):
-            return None, self.typ
+            return None
 
         # Start at outermost name on the qualifier's path 
         # and look up its scope. Then walk down child
@@ -219,10 +217,8 @@ class QualifiedTypeDecl(ProtoFieldDecl):
 
         # Check the final scope to make sure it contains the
         # actual type and return.
-        if scope != None and scope.get_child_scope(self.typ) != None:
-            return scope.curr_scope(), self.typ
-        else:
-            return None, self.typ
+        if scope is not None and scope.get_child_scope(self.typ) is not None:
+            return scope.curr_scope()
 
     def __str__(self):
         return "(QualifiedTypeDecl) " + str(self.qualifier) + "." + str(self.typ)

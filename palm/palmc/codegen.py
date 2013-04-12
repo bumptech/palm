@@ -1,4 +1,3 @@
-import pdb
 import sys
 import os
 from palm.palm import ProtoBase
@@ -11,14 +10,29 @@ def convert_proto_name(n):
     assert last == "proto"
     return "%s_palm" % p
 
-def lookup_package(qualifier, type, packages, package):
-    # if qualfier begins with a ".", automatically search for
+def lookup_package(qualifier, packages, package):
+    """Looks up the python name of the module representing 
+    the qualifier given. If the qualifier represents a package,
+    returns a dotted path for that mdule. Returns None if the package 
+    was not found OR if the qualifier represents the current package. 
+
+    The qualifier argument should be a dotted path representing a package
+    prefix. Note that the qualifier must NOT end with a period. 
+    
+    If a string is returned, it will ALWAYS end in a dot (".").
+
+    """
+
+    if qualifier == package or qualifier == ("." + package):
+        return None;
+
+    # if qualifier begins with a ".", automatically search for
     # fully qualified package
-    if qualifier.startswith(".") or package == None or len(package) == 0:
+    if qualifier.startswith(".") or package is None or len(package) == 0:
         if qualifier[1:] in packages:
-            return convert_proto_name(packages[qualifier[1:]].file) + ".", type
+            return convert_proto_name(packages[qualifier[1:]].file) + "."
         else:
-            return None, type
+            return None
 
     # Search for a qualifier by taking the current package
     # and appending the qualifier given to successively "outer"
@@ -27,8 +41,11 @@ def lookup_package(qualifier, type, packages, package):
     package_path = package
     while len(package_path) > 0:
         p = package_path + "." + qualifier
+        if p == package:
+            return None
+
         if p in packages:
-            return convert_proto_name(packages[p].file) + ".", type
+            return convert_proto_name(packages[p].file) + "."
 
         idx = package_path.rfind(".")
         if idx > -1:
@@ -36,14 +53,12 @@ def lookup_package(qualifier, type, packages, package):
         else:
             package_path = ""
 
-    # The qualifier may be an actual package reference, so we
+    # The qualifier may be a full package reference, so we
     # check here. We do this last because innermost scope must
     # searched first, and a package curr_package + qualifier may
     # have been imported.
     if qualifier in packages:
-        return convert_proto_name(packages[qualifier].file) + ".", type
-    else:
-        return None, type
+        return convert_proto_name(packages[qualifier].file) + "."
 
 def gen_module(messages, imports, tlenums, with_slots, packages, curr_package):
     global pfx
@@ -206,23 +221,22 @@ def write_field_get(num, type, name, default, scope):
 
 
 def write_field(num, field, packages, curr_package):
-    req, type, name, default = field
-    if hasattr(ProtoBase, 'TYPE_%s' % type.typ):
+    req, typ, name, default = field
+    if hasattr(ProtoBase, 'TYPE_%s' % typ.typ):
         scope = 'ProtoBase.'
-        type = type.typ
-    elif isinstance(type, QualifiedTypeDecl):
-        scope, typ = type.lookup_type()
-        if scope == None:
-            scope, typ = lookup_package(type.qualifier, type.typ, packages, curr_package)
+    elif isinstance(typ, QualifiedTypeDecl):
+        scope = typ.lookup_type()
+        if scope is None:
+            scope = lookup_package(typ.qualifier, packages, curr_package)
 
-        if scope == None:
+        if scope is None:
             scope = ''
-        type = typ
     else:
-        scope, type = type.lookup_type()
-        if scope == None:
+        scope = typ.lookup_type()
+        if scope is None:
             scope = ''
 
+    type = typ.typ
     if req == 'repeated':
         out(
 '''

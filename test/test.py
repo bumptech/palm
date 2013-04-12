@@ -26,6 +26,7 @@ import p2_palm
 import p3_palm
 import p4_palm
 import p5_palm
+import p6_palm
 
 class TestPalmc(object):
     def test_duplicate(self):
@@ -599,4 +600,13 @@ class TestScoping(object):
         assert p.b__type == p4_palm.M
         assert p.c__type == p4_palm.M
         assert p.d__type == p5_palm.M
+
+    def test_p6_scope(self):
+        p = p6_palm.Q()
+        assert p.a__type == p6_palm.Q
+        assert p.b__type == p6_palm.Q
+        assert p.c__type == p6_palm.Q
+        assert p.d__type == p6_palm.Q
+        assert p.e__type == p6_palm.Q
+
         
