@@ -1,0 +1,5 @@
+package com.foo.p1;
+
+message Q {
+  optional bool wat = 1;
+}

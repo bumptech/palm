@@ -1,0 +1,9 @@
+package com.foo.p6;
+
+message Q {
+  optional com.foo.p6.Q a = 1;
+  optional foo.p6.Q b = 2;
+  optional p6.Q c = 3;
+  optional Q d = 4;
+  optional .com.foo.p6.Q e = 5;
+}

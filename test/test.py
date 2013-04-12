@@ -1,5 +1,6 @@
 from subprocess import Popen, PIPE
-from os.path import dirname, abspath, join
+from os.path import dirname, abspath, join, exists
+from os import mkdir
 import operator as op
 
 from palm.palm import ProtoRequiredFieldMissing, ProtoValueError
@@ -9,16 +10,28 @@ def run(cmd):
     child = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
     assert child.wait() == 0, "Command failed:\n%s" % child.stderr.read()
 
-root = dirname(abspath(__file__))
-run('protoc --python_out=%s -I%s %s/*.proto' % (root, root, root))
-run('palmc %s %s' % (root, root))
+root, build = dirname(abspath(__file__)), join(dirname(abspath(__file__)), "build")
+if not exists(build):
+    mkdir(build)
+    open(join("build", "__init__.py"), "w+").close()
+
+run('protoc --python_out=%s -I%s %s/*.proto' % (build, root, root))
+run('palmc %s %s' % (root, build))
 
 import py.test
 
-import test_palm
-import test_pb2
-import test_nesting_palm
-import test_nesting_pb2
+import build.test_palm as test_palm
+import build.test_pb2 as test_pb2
+import build.test_nesting_palm as test_nesting_palm
+import build.test_nesting_pb2 as test_nesting_pb2
+
+import build.p1_palm as p1_palm
+import build.p1_pb2 as p1_pb2
+import build.p2_palm as p2_palm
+import build.p3_palm as p3_palm
+import build.p4_palm as p4_palm
+import build.p5_palm as p5_palm
+import build.p6_palm as p6_palm
 
 class TestPalmc(object):
     def test_duplicate(self):
@@ -511,3 +524,94 @@ class TestNesting(object):
         g2 = test_nesting_pb2.A()
         g2.ParseFromString(p.dumps())
         assert g == g2
+
+        p = test_nesting_palm.Q.T(binding=test_nesting_palm.Q.Binding(wat=False))
+        g = test_nesting_pb2.Q.T()
+        g.binding.wat = False
+        assert p.dumps() == g.SerializeToString()
+
+        p = test_nesting_palm.Q2.T(binding=test_nesting_palm.Q2.Binding(wat=False))
+        g = test_nesting_pb2.Q2.T()
+        g.binding.wat = False
+        assert p.dumps() == g.SerializeToString()
+
+        p = test_nesting_palm.Q3.T(binding=test_nesting_palm.Q3.T.Binding(wat=False))
+        g = test_nesting_pb2.Q3.T()
+        g.binding.wat = False
+        assert p.dumps() == g.SerializeToString()
+
+        p = test_nesting_palm.Q4.T(a=test_nesting_palm.Q3.T.Binding(wat=False),
+                                   b=test_nesting_palm.Q2.Binding(wat=True))
+        g = test_nesting_pb2.Q4.T()
+        g.a.wat = False
+        g.b.wat = True
+        assert p.dumps() == g.SerializeToString()
+
+        p = test_nesting_palm.Q4.V(a=test_nesting_palm.Q4.T.U(wat=True),
+                                   b=test_nesting_palm.Q4.T.U(wat=False))
+        g = test_nesting_pb2.Q4.V()
+        g.a.wat = True
+        g.b.wat = False
+        assert p.dumps() == g.SerializeToString()
+
+
+class TestScoping(object):
+    def test_p2_scope(self):
+        p1Q = p1_palm.Q
+        p2Q = p2_palm.M2.com.foo.p1.Q
+
+        p = p2_palm.M1()
+        assert p.a_p1__type == p1Q
+        assert p.b_p1__type == p1Q
+        assert p.c_p1__type == p1Q
+        assert p.d_p1__type == p1Q
+       
+        p = p2_palm.M2()
+        assert p.a_p1__type == p1Q
+        assert p.b_p1__type == p1Q
+        assert p.c_local__type == p2Q
+        assert p.e_p1__type == p1Q
+
+        p = p2_palm.M2.com()
+        assert p.a_p1__type == p1Q
+        assert p.b_local__type == p2Q
+        assert p.c_local__type == p2Q
+        assert p.e_p1__type == p1Q
+
+        p = p2_palm.M2.com.foo()
+        assert p.a_local__type == p2Q
+        assert p.b_local__type == p2Q
+        assert p.c_local__type == p2Q
+        assert p.e_p1__type == p1Q
+
+        p = p2_palm.M2.com.foo.p1()
+        assert p.a_local__type == p2Q
+        assert p.b_local__type == p2Q
+        assert p.c_local__type == p2Q
+        assert p.d_local__type == p2Q
+        assert p.e_p1__type == p1Q
+
+        p = p2_palm.M3.Binding.Binding.Binding()
+        assert p.m3_b_b_b__type == p2_palm.M3.Binding.Binding.Binding
+
+    def test_p3_scope(self):
+        p = p3_palm.M1()
+        assert p.a__type == p3_palm.com.foo.p1.Q
+        assert p.b__type == p1_palm.Q
+
+    def test_p5_scope(self):
+        p = p5_palm.M()
+        assert p.a__type == p4_palm.M
+        assert p.b__type == p4_palm.M
+        assert p.c__type == p4_palm.M
+        assert p.d__type == p5_palm.M
+
+    def test_p6_scope(self):
+        p = p6_palm.Q()
+        assert p.a__type == p6_palm.Q
+        assert p.b__type == p6_palm.Q
+        assert p.c__type == p6_palm.Q
+        assert p.d__type == p6_palm.Q
+        assert p.e__type == p6_palm.Q
+
+        
