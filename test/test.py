@@ -1,5 +1,6 @@
 from subprocess import Popen, PIPE
-from os.path import dirname, abspath, join
+from os.path import dirname, abspath, join, exists
+from os import mkdir
 import operator as op
 
 from palm.palm import ProtoRequiredFieldMissing, ProtoValueError
@@ -9,24 +10,28 @@ def run(cmd):
     child = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
     assert child.wait() == 0, "Command failed:\n%s" % child.stderr.read()
 
-root = dirname(abspath(__file__))
-run('protoc --python_out=%s -I%s %s/*.proto' % (root, root, root))
-run('palmc %s %s' % (root, root))
+root, build = dirname(abspath(__file__)), join(dirname(abspath(__file__)), "build")
+if not exists(build):
+    mkdir(build)
+    open(join("build", "__init__.py"), "w+").close()
+
+run('protoc --python_out=%s -I%s %s/*.proto' % (build, root, root))
+run('palmc %s %s' % (root, build))
 
 import py.test
 
-import test_palm
-import test_pb2
-import test_nesting_palm
-import test_nesting_pb2
+import build.test_palm as test_palm
+import build.test_pb2 as test_pb2
+import build.test_nesting_palm as test_nesting_palm
+import build.test_nesting_pb2 as test_nesting_pb2
 
-import p1_palm
-import p1_pb2
-import p2_palm
-import p3_palm
-import p4_palm
-import p5_palm
-import p6_palm
+import build.p1_palm as p1_palm
+import build.p1_pb2 as p1_pb2
+import build.p2_palm as p2_palm
+import build.p3_palm as p3_palm
+import build.p4_palm as p4_palm
+import build.p5_palm as p5_palm
+import build.p6_palm as p6_palm
 
 class TestPalmc(object):
     def test_duplicate(self):
