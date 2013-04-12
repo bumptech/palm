@@ -1,7 +1,6 @@
 import sys
 import os
 import traceback
-import pdb
 from optparse import OptionParser
 
 from palm.palmc.codegen import gen_module, convert_proto_name
@@ -13,7 +12,7 @@ class Namespace(object):
         self.package = package
 
     def __str__(self):
-        return "(Namespace) " + str(self.package) + " - " + str(file)
+        return "(Namespace) {0} - {1}".format(str(self.package), str(self.file))
 
     def __repr__(self):
         return str(self)
@@ -40,7 +39,7 @@ def run():
     protos = [f for f in os.listdir(d) if f.endswith(".proto")]
 
     try:
-        sys.stdout.write("Parsing...\n")
+        print("Parsing...")
         for proto_file in protos:
             sys.stdout.write(("%s..." % proto_file).ljust(70))
             sys.stdout.flush()
@@ -49,7 +48,7 @@ def run():
             _, res, l = make_parser().parse(source)
 
             if l != len(source):
-                raise SyntaxError("Syntax error on line %s near %r" % (
+                raise Exception("Syntax error on line %s near %r" % (
                     source[:l].count('\n') + 1,
                     source[l:l+10]))
 
@@ -60,14 +59,14 @@ def run():
                 packages_to_files[package] = ns
                 files_to_packages[proto_file] = ns
             elif len(package_list) > 1:
-                raise SyntaxError("Proto file %s declares more than 1 package." % proto_file)
+                raise Exception("Proto file %s declares more than 1 package." % proto_file)
             else:
                 package = None
 
             parsed.append((res, package, proto_file))
             sys.stdout.write("[OKAY]\n")
 
-        sys.stdout.write("Generating code...\n")
+        print("Generating code...")
         for (res, package, proto_file) in parsed:
             sys.stdout.write(("%s..." % proto_file).ljust(70))
             sys.stdout.flush()

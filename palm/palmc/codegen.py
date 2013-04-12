@@ -39,7 +39,7 @@ def lookup_package(qualifier, packages, package):
     # (i.e., shorter) paths on the current package.
     idx = 0
     package_path = package
-    while len(package_path) > 0:
+    while len(package_path):
         p = package_path + "." + qualifier
         if p == package:
             return None
@@ -196,7 +196,6 @@ class %s(ProtoBase):
     TYPE_%s = %s
 '''  % (snm, snm))
 
-    # TODO -- submessages
     for num, field in fields.iteritems():
         write_field(num, field, packages, curr_package)
 
