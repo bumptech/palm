@@ -58,7 +58,7 @@ class Scope(object):
         lexical scope. If the name is not defined at this level of
         scope, we ask the parent scope for it. Returns None if the
         name is ultimately not found."""
-        if name in self.local_names.keys():
+        if name in self.local_names:
             return self
         elif self.parent is None:
             return None
@@ -87,20 +87,19 @@ class Scope(object):
 
         Returns None if no scope is associated with the name (or if the name
         is not defined in this scope."""
-        if name in self.local_names.keys():
+        if name in self.local_names:
             return self.local_names[name]
         else:
             return None
 
     def __str__(self):
-        return self.__repr__()
-
-    def __repr__(self):
         if self.parent is None:
             return "(" + ",".join(self.local_names.keys()) + ")"
         else:
             return "(" + str(self.name) + ": " + ",".join(self.local_names.keys()) + "); " + str(self.parent)
 
+    def __repr__(self):
+        return str(self)
         
 class ScopeTable(object):
     """Manages scope during parsing of proto files. A single top-level
@@ -132,7 +131,7 @@ class ScopeTable(object):
         """Current lexical scope. Returns a Scope object."""
         return self.scopes[-1]
 
-class ProtoFieldDecl:
+class ProtoFieldDecl(object):
     """Represents the type of a field declaration."""
     
     def lookup_type(self):
