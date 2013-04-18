@@ -4,7 +4,7 @@ from os import mkdir
 import operator as op
 
 from palm.palm import ProtoRequiredFieldMissing, ProtoValueError
-
+from palm.palmc.codegen import convert_proto_name
 
 def run(cmd):
     child = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
@@ -554,6 +554,20 @@ class TestNesting(object):
         g.b.wat = False
         assert p.dumps() == g.SerializeToString()
 
+
+class TestPythonNames(object):
+    def test_proto_name_convert(self):
+        """Test that file names with dashes, dots, or other illegal charactesr
+        are translated to valid python identifiers."""
+        assert "foo_bar_baz_palm" == convert_proto_name("foo-bar-baz.proto")
+        assert "foo_bar_baz_palm" == convert_proto_name("foo_bar-baz.proto")
+        assert "foo_palm" == convert_proto_name("foo.proto")
+        assert "foo_bar_baz_palm" == convert_proto_name("foo_bar.baz.proto")
+        assert "foo_bar_baz_palm" == convert_proto_name("foo_bar.baz.proto")
+        assert "foo_bar_baz_palm" == convert_proto_name("foo-bar.baz.proto")
+        assert "foo_bar_baz_palm" == convert_proto_name("foo.bar-baz.proto")
+        assert "foo_bar_baz_palm" == convert_proto_name("foo.bar.baz.proto")
+        assert "foo_bar_baz_palm" == convert_proto_name("foo.bar_baz.proto")
 
 class TestScoping(object):
     def test_p2_scope(self):

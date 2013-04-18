@@ -8,7 +8,7 @@ def convert_proto_name(n):
     n = os.path.basename(n)
     p, last = n.rsplit(".", 1)
     assert last == "proto"
-    return "%s_palm" % p
+    return "%s_palm" % p.replace('-', '_').replace(' ', '_').replace('.', '_')
 
 def lookup_package(qualifier, packages, package):
     """Looks up the python name of the module representing 
