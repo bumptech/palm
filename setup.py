@@ -4,7 +4,7 @@ sourcefiles = ["palm/palm.c", "palm/palmcore.c"]
 
 setup(
         name="palm",
-        version="0.1.6post2",
+        version="0.1.7",
         packages=["palm", "palm.palmc", ],
         ext_modules=[Extension("palm.palm", sources=sourcefiles)],
         install_requires=["simpleparse >=2.1",
