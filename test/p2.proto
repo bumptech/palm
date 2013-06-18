@@ -1,0 +1,53 @@
+package com.foo.p2;
+import "p1.proto";
+
+message M1 {
+  optional p1.Q a_p1 = 1; // from p1
+  optional foo.p1.Q b_p1 = 2; // from p1
+  optional com.foo.p1.Q c_p1 = 3; // from p1
+  optional .com.foo.p1.Q d_p1 = 4; // from p1
+}
+
+message M2 {
+  optional p1.Q a_p1 = 1;  // from p1
+  optional foo.p1.Q b_p1 = 2; // from p1
+  optional com.foo.p1.Q c_local = 3; // local
+  optional .com.foo.p1.Q e_p1 = 5; // from p1
+
+  message com {
+
+    optional p1.Q a_p1 = 1; // from p1
+    optional foo.p1.Q b_local = 2; // local
+    optional com.foo.p1.Q c_local = 3; // local
+    optional .com.foo.p1.Q e_p1 = 5; // from p1
+
+    message foo {
+      optional p1.Q a_local = 1; // local
+      optional foo.p1.Q b_local = 2; // local
+      optional com.foo.p1.Q c_local = 3; // local
+      optional .com.foo.p1.Q e_p1 = 5; // from p1
+
+      message p1 {
+        optional p1.Q a_local = 1; // local
+        optional foo.p1.Q b_local = 2; // local
+        optional com.foo.p1.Q c_local = 3; // local
+        optional Q d_local = 4; // local
+	optional .com.foo.p1.Q e_p1 = 5; // from p1
+
+        message Q { 
+	  optional bool wat = 1;
+	}
+      }
+    }
+  }
+}
+
+message M3 {
+  message Binding {
+    message Binding {
+      message Binding {
+        optional Binding m3_b_b_b = 1;
+      }
+    }
+  }
+}
