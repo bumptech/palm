@@ -194,9 +194,6 @@ static void pbf_scan (pbf_protobuf *pbf, char* stringmap, int maxstringid) {
             default: // unknown type
                 return;
         }
-        struct timeval tv;
-        gettimeofday(&tv, NULL);
-        //printf("%lu %u\n", field_num, tv.tv_usec);
         if (ptr > limit)
             return; // overflow on string length, etc
         cur->raw_len = ptr - cur->raw;
@@ -275,7 +272,7 @@ pbf_protobuf * pbf_load(char *data, uint64_t size, char *stringmap, uint64_t max
 }
 
 void pbf_free(pbf_protobuf *pbf) {
-    int i, j;
+    int i;
     pbf_mark *cur;
 
     /* free repeated slabs */
