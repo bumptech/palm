@@ -4,10 +4,11 @@ sourcefiles = ["palm/palm.c", "palm/palmcore.c"]
 
 setup(
         name="palm",
-        version="0.1.6",
+        version="0.1.6post2",
         packages=["palm", "palm.palmc", ],
         ext_modules=[Extension("palm.palm", sources=sourcefiles)],
-        install_requires=["simpleparse >=2.1"],
+        install_requires=["simpleparse >=2.1",
+                          "protobuf>=2.4.1,<=2.4.999"],
         zip_safe=False, # This fixes some crazy circular import junk.
         entry_points='''
         [console_scripts]

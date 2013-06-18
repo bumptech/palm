@@ -4,3 +4,4 @@ palm/palm.so
 palm.egg-info/
 dist/
 .noseids
+*~

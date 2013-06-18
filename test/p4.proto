@@ -1,0 +1,5 @@
+package com.foo.bar.biz.p4;
+import "p1.proto";
+
+message M { }
+

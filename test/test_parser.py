@@ -1,5 +1,5 @@
-from palm.palmc.parse import make_parser
-
+from palm.palmc.parse import make_parser, Package
+import pdb
 
 class ParserFixture(object):
     src = ''
@@ -21,12 +21,17 @@ enum Baz {
     NACK = 2;
 }
 '''
+    def test_package_found(self):
+        package = self.result[0]
+        assert isinstance(package, Package)
+        assert package.name == "com.foo.bar"
+
     def test_enums_dont_nest_in_prior_objects(self):
-        msgname, (subs, fields, enums) = self.result[0]
+        msgname, (subs, fields, enums) = self.result[1]
         assert 'Baz' not in enums
 
     def test_top_level_enum_is_in_top_level_result(self):
-        ename, efields = self.result[1]
+        ename, efields = self.result[2]
         assert ename == 'Baz'
         assert efields['ACK'] == 1
         assert efields['NACK'] == 2
