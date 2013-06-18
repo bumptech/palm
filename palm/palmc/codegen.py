@@ -204,6 +204,9 @@ def write_field(cname, parent, num, field, parent_ns):
                 return v_
             return [acc(v) for v in self._cache[%(num)s]]
         return self._get_repeated(%(num)s, self.TYPE_%(type)s, "%(name)s", lazy=True)
+
+    def %(name)s__fast_append(self, value):
+        self._append_to_repeated(%(num)d, self.TYPE_%(type)s, value)
 ''' % {'name':name, 'num':num, 'type':type})
 
     # Back to all fields...

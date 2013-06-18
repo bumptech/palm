@@ -495,7 +495,26 @@ class TestProto(object):
         pb1 = test_palm.Test()
         assert pb1.chosen_class == test_palm.Test.ECONOMY
 
+    def test_fast_append(self):
+        pb1 = test_palm.Test(req_a=1, req_b=2, req_c=3)
+        pb1.r_secret.append(test_palm.Secret(code=100, message="woo!"))
+        pb2 = test_palm.Test(pb1.dumps())
+        pb2.r_secret__fast_append(test_palm.Secret(code=200, message="hoo!"))
+        assert pb1.dumps() != pb2.dumps()
+        pb3 = test_palm.Test(pb2.dumps())
+        assert len(pb3.r_secret) == 2, len(pb3.r_secret)
+        assert pb3.r_secret[1].code == 200
+        assert pb3.r_secret[1].message == "hoo!"
 
+    def test_fast_append_on_rendered_repeated_fails(self):
+        pb1 = test_palm.Test(req_a=1, req_b=2, req_c=3)
+        pb1.r_secret.append(test_palm.Secret(code=100, message="woo!"))
+        try:
+            pb1.r_secret__fast_append(test_palm.Secret(code=200, message="hoo!"))
+        except ValueError:
+            pass
+        else:
+            assert 0, "SHOULD HAVE RAISED"
 class TestNesting(object):
     def test_nested_messages(self):
         """See https://github.com/bumptech/palm/issues/24"""

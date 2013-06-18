@@ -8,7 +8,7 @@
 import sys
 import time
 
-from test_palm import Test
+from test_palm import Test, Secret
 from subprocess import Popen, PIPE
 
 # Serialized Test object with required fields set.
@@ -23,17 +23,22 @@ def check(pid, run_type):
 
 if len(sys.argv) == 1:
     # Test both baseline memory and 10k objects loaded into memory.
-    for opt in ['baseline', '10k']:
+    for opt in ['baseline', 'normal-append', 'fast-append']:
         p = Popen(['python', sys.argv[0], opt])
-        time.sleep(5)
+        time.sleep(10)
         assert p.returncode is None
         check(p.pid, opt)
         p.terminate()
 else:
     if sys.argv[1] == 'baseline':
         pass
-    elif sys.argv[1] == '10k':
-        pbs = [Test(sample_bytes) for i in xrange(10000)]
+    else:
+        pb = Test(open('big-test-palm.dat').read())
+        if sys.argv[1] == 'normal-append':
+            pb.r_secret.append(Secret(code=0, message="normal-append"))
+        elif sys.argv[1] == 'fast-append':
+            pb.r_secret__fast_append(Secret(code=0, message="normal-append"))
+        data = pb.dumps()
     try:
         raw_input()
     except:
