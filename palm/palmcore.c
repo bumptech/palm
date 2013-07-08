@@ -88,9 +88,11 @@ void pbf_add_slab(pbf_mark *head) {
     /* Create/grow repeated allocation */
     int i;
     pbf_mark *cur;
-    if (head->repeated_alloc == 0)
-        head->repeated_alloc = 1;
-    head->repeated_alloc *= REPEATED_MULTIPLE;
+    if (head->repeated_alloc == 0) {
+        head->repeated_alloc = REPEATED_START_SIZE;
+    } else {
+        head->repeated_alloc *= 2;
+    }
 
     assert(head->repeated_alloc <= REPEATED_HARD_CAP);
     head->repeats = (pbf_mark *)realloc(head->repeats, head->repeated_alloc * sizeof(pbf_mark));
