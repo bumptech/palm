@@ -8,7 +8,7 @@ typedef enum {
     pbf_type_fixed32 = 5
 } pbf_field_type;
 
-#define REPEATED_START_SIZE (512)
+#define REPEATED_START_SIZE (64)
 #define REPEATED_HARD_CAP (64 * 64 * 64 * 64)
 
 typedef struct pbf_mark {
