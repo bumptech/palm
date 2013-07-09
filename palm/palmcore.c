@@ -53,7 +53,7 @@ static int pbf_ensure_space(pbf_protobuf *pbf, uint64_t max) {
 
     int mark = pbf->num_marks;
     pbf_mark * cur;
-    pbf->num_marks = max + 100;
+    pbf->num_marks = max + 1;
     pbf->marks = realloc(pbf->marks, sizeof(pbf_mark) * pbf->num_marks);
 
     for (; mark < pbf->num_marks; mark++) {
