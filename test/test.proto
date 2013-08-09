@@ -101,4 +101,5 @@ message Test { //Test Comment 1
     repeated Secret r_secret = 56;
 
     optional AirplaneClass chosen_class = 57 [default = ECONOMY];
+    optional Bar ext = 58;
 }
