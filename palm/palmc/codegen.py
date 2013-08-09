@@ -11,14 +11,14 @@ def convert_proto_name(n):
     return "%s_palm" % p.replace('-', '_').replace(' ', '_').replace('.', '_')
 
 def lookup_package(qualifier, packages, package):
-    """Looks up the python name of the module representing 
+    """Looks up the python name of the module representing
     the qualifier given. If the qualifier represents a package,
-    returns a dotted path for that mdule. Returns None if the package 
-    was not found OR if the qualifier represents the current package. 
+    returns a dotted path for that mdule. Returns None if the package
+    was not found OR if the qualifier represents the current package.
 
     The qualifier argument should be a dotted path representing a package
-    prefix. Note that the qualifier must NOT end with a period. 
-    
+    prefix. Note that the qualifier must NOT end with a period.
+
     If a string is returned, it will ALWAYS end in a dot (".").
 
     """
@@ -67,7 +67,9 @@ def gen_module(messages, imports, tlenums, with_slots, packages, curr_package):
 
     out('from palm.palm import ProtoBase, is_string, RepeatedSequence, ProtoValueError\n\n_PB_type = type\n_PB_finalizers = []\n\n')
     for i in imports:
-        out('import %s\n' % convert_proto_name(i))
+        converted_name = convert_proto_name(i)
+        out('import %s\n' % converted_name)
+        out('from %s import *\n' % converted_name)
 
     for ename, espec in tlenums:
         write_enum(ename, espec)

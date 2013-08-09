@@ -528,6 +528,13 @@ class TestProto(object):
             pass
         else:
             assert 0, "SHOULD HAVE RAISED"
+
+    def test_field_from_imported_proto(self):
+        pb1 = test_palm.Test(req_a=1, req_b=2, req_c=3)
+        pb1.ext = test_palm.Bar(message="hi")
+        pb2 = test_palm.Test(pb1.dumps())
+        assert pb2.ext.message == "hi"
+
 class TestNesting(object):
     def test_nested_messages(self):
         """See https://github.com/bumptech/palm/issues/24"""
@@ -598,7 +605,7 @@ class TestScoping(object):
         assert p.b_p1__type == p1Q
         assert p.c_p1__type == p1Q
         assert p.d_p1__type == p1Q
-       
+
         p = p2_palm.M2()
         assert p.a_p1__type == p1Q
         assert p.b_p1__type == p1Q
@@ -647,4 +654,4 @@ class TestScoping(object):
         assert p.d__type == p6_palm.Q
         assert p.e__type == p6_palm.Q
 
-        
+
