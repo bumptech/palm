@@ -67,7 +67,9 @@ def gen_module(messages, imports, tlenums, with_slots, packages, curr_package):
 
     out('from palm.palm import ProtoBase, is_string, RepeatedSequence, ProtoValueError\n\n_PB_type = type\n_PB_finalizers = []\n\n')
     for i in imports:
-        out('import %s\n' % convert_proto_name(i))
+        converted_name = convert_proto_name(i)
+        out('import %s\n' % converted_name)
+        out('from %s import *\n' % converted_name)
 
     for ename, espec in tlenums:
         write_enum(ename, espec)
