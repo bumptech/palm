@@ -605,7 +605,7 @@ class TestScoping(object):
         assert p.b_p1__type == p1Q
         assert p.c_p1__type == p1Q
         assert p.d_p1__type == p1Q
-       
+
         p = p2_palm.M2()
         assert p.a_p1__type == p1Q
         assert p.b_p1__type == p1Q
@@ -654,4 +654,4 @@ class TestScoping(object):
         assert p.d__type == p6_palm.Q
         assert p.e__type == p6_palm.Q
 
-        
+

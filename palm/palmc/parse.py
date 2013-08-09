@@ -45,7 +45,7 @@ import_path             := -'"'*
 
 class Scope(object):
     """Represents a given lexical scope. Automatically inherits all names from
-    the given parent scope (unless none was given). New names can be added to the 
+    the given parent scope (unless none was given). New names can be added to the
     local scope; those names can define their own scope, as well."""
 
     def __init__(self, name, parent):
@@ -76,14 +76,14 @@ class Scope(object):
                 return parent_name + self.name + "."
             else:
                 return self.name + "."
-            
+
     def add_name(self, name, child_scope):
         """Add a name to the current scope, including any
         lexical scope that name brings along."""
         self.local_names[name] = child_scope
 
     def get_child_scope(self, name):
-        """Gets the scope associated with the name given, if any. 
+        """Gets the scope associated with the name given, if any.
 
         Returns None if no scope is associated with the name (or if the name
         is not defined in this scope."""
@@ -100,7 +100,7 @@ class Scope(object):
 
     def __repr__(self):
         return str(self)
-        
+
 class ScopeTable(object):
     """Manages scope during parsing of proto files. A single top-level
     scope will be created when the ScopeTable is built. This top-level
@@ -133,7 +133,7 @@ class ScopeTable(object):
 
 class ProtoFieldDecl(object):
     """Represents the type of a field declaration."""
-    
+
     def lookup_type(self):
         """Returns the scope of the type used to define this field. The value
         returned is a string giving a dotted path prefix (representing
@@ -173,7 +173,7 @@ class QualifiedTypeDecl(ProtoFieldDecl):
     """Represents a type specified with some sort of qualifying path. The
     path can be either a package reference or a path to some type
     defined within the current lexical scope."""
-    
+
     def __init__(self, qualifier, typ, scope):
         """Create a Qualfied type with a given path prefix (qualifier),
         type name (typ), and lexical scope (scope). The path prefix should NOT
@@ -194,17 +194,17 @@ class QualifiedTypeDecl(ProtoFieldDecl):
         never found in scope here, and always result in None.
 
         """
-        # If qualifier starts with a dot, this is 
+        # If qualifier starts with a dot, this is
         # definitely a package reference
         if self.qualifier.startswith("."):
             return None
 
-        # Start at outermost name on the qualifier's path 
+        # Start at outermost name on the qualifier's path
         # and look up its scope. Then walk down child
-        # scopes for each element in the path. 
+        # scopes for each element in the path.
         path = self.qualifier.split(".")
 
-        # The initial scope will contain the first name 
+        # The initial scope will contain the first name
         # in the path; it is NOT the lexical scope defined by
         # that name (which is why our for loop starts at the first
         # path element, rather than the second).
@@ -244,7 +244,7 @@ class Reference(object):
         return "%s%s" % (scope, self.name)
 
 class Package(object):
-    """Gives the package associated with the current file (if any). 
+    """Gives the package associated with the current file (if any).
     Use the 'name' attribute to get back the package name."""
 
     def __init__(self, name):
@@ -281,7 +281,7 @@ class ProtoProcessor(DispatchProcessor):
             self.scope_table.enter_scope(message_label)
             dispatchList(self, subtags, buffer)
             message_scope = self.scope_table.leave_scope()
-            # Add the new message and its associated scope to this message's lexical 
+            # Add the new message and its associated scope to this message's lexical
             # scope.
             self.scope_table.current_scope().add_name(message_label, message_scope)
 
@@ -295,7 +295,7 @@ class ProtoProcessor(DispatchProcessor):
         else:
             self.current_message = None
 
-        self.messages[cm] = (self.messages[cm][0], 
+        self.messages[cm] = (self.messages[cm][0],
             [(sm, self.messages[sm]) for sm in self.messages[cm][1]],
             self.enum_sets[cm])
 
@@ -322,7 +322,7 @@ class ProtoProcessor(DispatchProcessor):
         qualifier = dispatchList(self, subtags, buffer)
         # qualifier will be the package the type is imported from, unless
         # it is zero length. buffer[start:stop] - qualifier will leave us
-        # with the type name. 
+        # with the type name.
         if len(qualifier) > 0 and len(qualifier[0]) > 0:
             ns = qualifier[0][:-1]
             typ = buffer[start+len(qualifier[0]):stop]
@@ -333,7 +333,7 @@ class ProtoProcessor(DispatchProcessor):
 
     def field_scope(self, (tag, start, stop, subtags), buffer):
         return buffer[start:stop]
-        
+
     def field_name(self, (tag, start, stop, subtags), buffer):
         return buffer[start:stop]
 
@@ -396,7 +396,7 @@ class ProtoProcessor(DispatchProcessor):
 
     def package_name(self, (tag, start, stop, subtags), buffer):
         return Package(buffer[start:stop])
-        
+
 
 class ProtoParser(Parser):
     def buildProcessor(self):

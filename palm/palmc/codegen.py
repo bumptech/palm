@@ -11,14 +11,14 @@ def convert_proto_name(n):
     return "%s_palm" % p.replace('-', '_').replace(' ', '_').replace('.', '_')
 
 def lookup_package(qualifier, packages, package):
-    """Looks up the python name of the module representing 
+    """Looks up the python name of the module representing
     the qualifier given. If the qualifier represents a package,
-    returns a dotted path for that mdule. Returns None if the package 
-    was not found OR if the qualifier represents the current package. 
+    returns a dotted path for that mdule. Returns None if the package
+    was not found OR if the qualifier represents the current package.
 
     The qualifier argument should be a dotted path representing a package
-    prefix. Note that the qualifier must NOT end with a period. 
-    
+    prefix. Note that the qualifier must NOT end with a period.
+
     If a string is returned, it will ALWAYS end in a dot (".").
 
     """

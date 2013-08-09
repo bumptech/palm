@@ -43,7 +43,7 @@ def run():
         for proto_file in protos:
             sys.stdout.write(("%s..." % proto_file).ljust(70))
             sys.stdout.flush()
-            
+
             source = open(os.path.join(d, proto_file)).read()
             _, res, l = make_parser().parse(source)
 
@@ -70,15 +70,15 @@ def run():
         for (res, package, proto_file) in parsed:
             sys.stdout.write(("%s..." % proto_file).ljust(70))
             sys.stdout.flush()
-            # Filter the package mappings given to 
-            # gen_module based on the packages 
-            # imported by this proto file. 
+            # Filter the package mappings given to
+            # gen_module based on the packages
+            # imported by this proto file.
             #
             # Fortunately, imports are not transitive (except 'import public'
             # but we aren't going to worry abou that), so we only need
             # to look for packages imported directly.
             imports = [m for m in res if type(m) is str]
-            module_packages = dict([(p, ns) for (p, ns) 
+            module_packages = dict([(p, ns) for (p, ns)
                                    in packages_to_files.iteritems()
                                    if ns.file in imports])
             s = gen_module([m for m in res if type(m) is tuple],
