@@ -53,7 +53,7 @@ static int pbf_ensure_space(pbf_protobuf *pbf, uint64_t max) {
 
     int mark = pbf->num_marks;
     pbf_mark * cur;
-    pbf->num_marks = max + 100;
+    pbf->num_marks = max + 1;
     pbf->marks = realloc(pbf->marks, sizeof(pbf_mark) * pbf->num_marks);
 
     for (; mark < pbf->num_marks; mark++) {
@@ -88,9 +88,11 @@ void pbf_add_slab(pbf_mark *head) {
     /* Create/grow repeated allocation */
     int i;
     pbf_mark *cur;
-    if (head->repeated_alloc == 0)
-        head->repeated_alloc = 1;
-    head->repeated_alloc *= REPEATED_MULTIPLE;
+    if (head->repeated_alloc == 0) {
+        head->repeated_alloc = REPEATED_START_SIZE;
+    } else {
+        head->repeated_alloc *= 2;
+    }
 
     assert(head->repeated_alloc <= REPEATED_HARD_CAP);
     head->repeats = (pbf_mark *)realloc(head->repeats, head->repeated_alloc * sizeof(pbf_mark));
