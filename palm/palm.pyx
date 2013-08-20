@@ -121,10 +121,14 @@ cdef class ProtoBase(object):
     cdef int CTYPE_float
     cdef int CTYPE_bool
 
-    def __init__(self, data, **kw):
+    def __cinit__(self):
         self.buf = NULL
+        self.stringmap = NULL
 
+    def __init__(self, data, **kw):
         if self._pbf_strings:
+            if self.stringmap:
+                free(self.stringmap)
             self.maxstring = max(self._pbf_strings)
             self.stringmap = <char *>malloc(self.maxstring + 1)
             memset(self.stringmap, 0, self.maxstring + 1)

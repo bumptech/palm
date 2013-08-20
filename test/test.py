@@ -535,6 +535,22 @@ class TestProto(object):
         pb2 = test_palm.Test(pb1.dumps())
         assert pb2.ext.message == "hi"
 
+    def test_double_init_uses_latest_protobuf_data(self):
+        pb1 = test_palm.Test(req_a=1, req_b=2, req_c=3)
+        pb2 = test_palm.Test(req_a=3, req_b=2, req_c=1)
+        pb3 = test_palm.Test(pb1.dumps())
+        pb3.__init__(pb2.dumps())
+        assert pb3.req_a == 3
+        assert pb3.req_b == 2
+        assert pb3.req_c == 1
+
+    def test_double_init_uses_latest_fields(self):
+        pb1 = test_palm.Test(req_a=1, req_b=2, req_c=3)
+        pb1.__init__(req_a=3, req_b=2, req_c=1)
+        assert pb1.req_a == 3
+        assert pb1.req_b == 2
+        assert pb1.req_c == 1
+
 class TestNesting(object):
     def test_nested_messages(self):
         """See https://github.com/bumptech/palm/issues/24"""
